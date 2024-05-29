@@ -1,0 +1,38 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}{% endblock %}</title>
+    {% block head %}{% endblock %}
+    <link rel="stylesheet" href="/static/css/style.css">
+<body>
+    <script>
+        function getParameterByName(name) {
+            name = name.replace(/[\[\]]/g, "\\$&");
+            var regex = new RegExp("[?&]" + name + "(=([^&#]*)|&|#|$)"),
+                results = regex.exec(queryString);
+            if (!results) return null;
+            if (!results[2]) return '';
+            return decodeURIComponent(results[2].replace(/\+/g, " "));
+        }
+    </script>
+    {% if mess %}
+    <script>
+        alert("{{ mess }}");
+    </script>
+    {% endif %}
+    <header>
+        <div class="intro">{% block intro %}{% endblock %}</div>
+        <div class="option" id="options">{% block option %}{% endblock %}</div>
+    </header>
+    {% block content %}{% endblock%}
+    {% if userID %}
+    <script src="/static/js/onlineChecker.js"></script>
+    <script>
+        activateOnlineWebSocket('{{userID}}')
+    </script>
+    {% endif %}
+</body>
+</html>

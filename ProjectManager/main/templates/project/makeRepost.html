@@ -1,0 +1,157 @@
+{% extends "basic.html" %}
+{% block title %}Lập báo cáo{% endblock %}
+{% block intro %}Lập báo cáo tiến độ{% endblock %}
+{% block option %}<a class="optionBtn" href="/project/schedule?token={{token}}">Quay lại</a>{% endblock %}
+{% block head %}
+<script src="/admin/jsi18n/"></script>
+<script src="/static/admin/js/calendar.js"></script>
+<script src="/static/admin/js/admin/DateTimeShortcuts.js"></script>
+<script src="/static/admin/js/core.js"></script>
+{% endblock %}
+{% block content %}
+<form class="my-form" method="post">
+    {%csrf_token%}
+    {{form.as_p}}
+    <button class="form-button" type="submit">Lưu báo cáo</button>
+</form>
+<style>
+    body {
+        font-size: 18px;
+    }
+    .datetimeshortcuts {
+        line-height: 140%;
+    }
+    .datetimeshortcuts a{
+        color:rgb(67, 135, 135);
+        text-decoration: none;
+        transition: color 0.15s;
+    }
+    .datetimeshortcuts a .date-icon {
+        background: url(/static/admin/img/icon-calendar.svg) 0 0 no-repeat;
+        top: -1px;
+        position: relative;
+        display: inline-block;
+        vertical-align: middle;
+        height: 16px;
+        width: 16px;
+        overflow: hidden;
+    }
+    /* calender */
+.datetimeshortcuts {
+    line-height: 140%;
+}
+.datetimeshortcuts a{
+    color:rgb(67, 135, 135);
+    text-decoration: none;
+    transition: color 0.15s;
+}
+.datetimeshortcuts a .date-icon {
+    background: url(/static/admin/img/icon-calendar.svg) 0 0 no-repeat;
+    top: -1px;
+    position: relative;
+    display: inline-block;
+    vertical-align: middle;
+    height: 16px;
+    width: 16px;
+    overflow: hidden;
+}
+.calendarbox.module {
+    margin: 5px auto;
+    font-size: 0.75rem;
+    width: 19em;
+    text-align: center;
+    background: white;
+    color: black;
+    border: 1px solid;
+    border-radius: 4px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+    overflow: hidden;
+}
+.calendarbox.module .calendarnav-previous, .calendarbox .calendarnav-next {
+    display: block;
+    position: absolute;
+    top: 8px;
+    width: 15px;
+    height: 15px;
+    text-indent: -9999px;
+    padding: 0;
+}
+.calendarnav-previous {
+    left: 10px;
+    background: url(/static/admin//img/calendar-icons.svg) 0 0 no-repeat;
+}
+.calendarnav-next {
+    right: 10px;
+    background: url(/static/admin//img/calendar-icons.svg) 0 -30px no-repeat;
+}
+.calendarbox.module .calendar {
+    margin: 0;
+    padding: 0;
+}
+.calendar table {
+    margin: 0;
+    padding: 0;
+    border-collapse: collapse;
+    background: white;
+    width: 100%;
+}
+.calendar caption, .calendarbox h2 {
+    margin: 0;
+    height: 30px;
+    text-align: center;
+    border-top: none;
+    font-weight: 700;
+    font-size: 0.75rem;
+    color: #333;
+    background: green;
+
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
+.calendar td a:focus, .timelist a:focus, .calendar td a:hover, .timelist a:hover {
+    background: #79aec8;
+    color: white;
+}
+.calendar table {
+    border-collapse: collapse;
+}
+.calendar td a, .timelist a {
+    display: block;
+    font-weight: 400;
+    padding: 6px;
+    text-decoration: none;
+    color: #666;
+}
+.calendar th {
+    padding: 8px 5px;
+    background: #f8f8f8;
+    border-bottom: 1px solid #ccc;
+    font-weight: 400;
+    font-size: 0.75rem;
+    text-align: center;
+    color: #666;
+}
+a:link, a:visited {
+    color: var(--link-fg);
+    text-decoration: none;
+    transition: color 0.15s, background 0.15s;
+}
+.calendar-shortcuts {
+    background: #fff;
+    color: #666;
+    font-size: 0.6875rem;
+    line-height: 0.6875rem;
+    border-top: 1px solid #e8e8e8;
+    padding: 8px 0;
+}
+.calendar-cancel {
+    margin: 0;
+    padding: 4px 0;
+    font-size: 0.75rem;
+    background: #747474;
+    border-top: 1px solid #ccc;
+    color: #fff;
+}
+/* end calender */
+</style>
+{% endblock %}

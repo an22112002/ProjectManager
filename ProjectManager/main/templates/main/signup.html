@@ -1,0 +1,43 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Đăng nhập</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+<body>
+    {% if mess %}
+    <script>
+        alert("{{ mess }}");
+    </script>
+    {% endif %}
+    <header>
+        <div class="intro">Đăng ký tài khoản</div>
+        <div class="option" id="options"><a href="/main/login" class="optionBtn">Đăng nhập</a></div>
+    </header>
+    <div>
+        <form class="signup-form" method="post">
+            {%csrf_token%}
+            {{form.as_p}}
+            <button class="form-button" type="submit">Đăng ký</button>
+        </form>
+    </div>
+    <style>
+        .signup-form {
+            background-color: blanchedalmond;
+            margin: 20px 20% 20px 20%;
+            border: 2px solid;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .signup-form p {
+            padding-left: 30%;
+            display: flex;
+        }
+        .signup-form p label {
+            width: 100px;
+        }
+    </style>
+</body>
+</html>

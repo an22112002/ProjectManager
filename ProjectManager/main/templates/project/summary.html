@@ -1,0 +1,447 @@
+{% extends "basic.html" %}
+{% block title %}Tổng kết dự án{% endblock %}
+{% block intro %}Tổng kết dự án{% endblock %}
+{% block option %}<a class="optionBtn" href="/main/homepage?token={{token}}">Quay lại</a>{% endblock %}
+{% block content %}
+<script>
+    const token = '{{token}}'
+    let iColor = 0;
+    let color = ["rgb(255, 0, 0)","rgb(255, 128, 0)","rgb(255, 128, 128)","rgb(255, 255, 128)",
+        "rgb(0, 255, 0)","rgb(128, 255, 0)","rgb(128, 255, 128)","rgb(128, 255, 255)",
+        "rgb(0, 0, 255)","rgb(128, 0, 255)","rgb(128, 128, 255)","rgb(255, 128, 255)"]
+</script>
+<table id="myTable" class="big-table">
+    <thead>
+        <tr style="width: 100%;">
+            <th style="min-width: 200px;">Công việc</th>
+            <th style="width: 90px;">Ngân sách</th>
+            <th style="width: 90px;">Tiến độ</th>
+            <th style="width: auto;" colspan="{{lenArr}}">Thời gian</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td class="d"></td>
+            <td class="d"></td>
+            <td class="d"></td>
+            {% for date in arrDatesLimit %}
+            <td class="d">{{date}}</td>
+            {% endfor %}
+        </tr>
+        {% for mission in missions %}
+        <tr id="{{mission.id}}">
+            <script>
+                if ('{{mission.type}}'=="task") {
+                    document.getElementById("{{mission.id}}").setAttribute(
+                        "data-info", ['{{mission.ID}}','{{mission.Name}}','{{mission.Budget}}','{{mission.Progress}}','{{mission.FullStartDate}}', '{{mission.FullEndDate}}', '{{mission.Order}}', '{{mission.Description}}', '{{mission.Assigner}}', '{{mission.Assign.pk}}', '{{mission.Assign.Id_member.pk}}','{{mission.RealStartDate}}', '{{mission.RealEndDate}}']);
+                } else {
+                    document.getElementById("{{mission.id}}").setAttribute(
+                        "data-info", ['{{mission.ID}}','{{mission.Name}}','{{mission.Budget}}','{{mission.Progress}}','{{mission.FullStartDate}}', '{{mission.FullEndDate}}', '{{mission.Order}}']);
+                }
+            </script>
+            <td class="l">{% if mission.type == "phase" %}<strong>{{mission.Name}}</strong>{% else %}{{mission.Name}}{% endif %}</td>
+            <td class="d">{{mission.Budget}}</td>
+            <td class="d">{{mission.Progress}}%</td>
+            <script>mark = false;</script>
+            {% for date in arrDates %}
+            <script>
+                if ('{{date}}'=='{{mission.FullStartDate}}') {
+                    mark = true;
+                }
+                if (mark) {
+                    document.getElementById("{{mission.id}}").innerHTML += '<td class="d" style="background-color: '+ color[iColor]+';"></td>'
+                } else {
+                    document.getElementById("{{mission.id}}").innerHTML += '<td class="d"></td>'
+                }
+                if ('{{date}}'=='{{mission.FullEndDate}}') {
+                    mark = false;
+                    iColor += 1;
+                    if (iColor == color.length) {iColor=0}
+                }
+            </script>
+            {% endfor %}
+        </tr>
+        <tr id="{{mission.id}}-rt">
+            <td class="l"><i>Thời gian thực tế</i></td>
+            <td class="d" colspan="2"></td>
+            <script>mark = false;</script>
+            {% for date in arrDates %}
+            <script>
+                if ('{{date}}'=='{{mission.RealStartDate}}') {
+                    mark = true;
+                }
+                if (mark) {
+                    document.getElementById("{{mission.id}}-rt").innerHTML += '<td class="d" style="background-color: '+ color[iColor]+';"></td>'
+                } else {
+                    document.getElementById("{{mission.id}}-rt").innerHTML += '<td class="d"></td>'
+                }
+                if ('{{date}}'=='{{mission.RealEndDate}}') {
+                    mark = false;
+                    iColor += 1;
+                    if (iColor == color.length) {iColor=0}
+                }
+            </script>
+            {% endfor %}
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+<div class="hidden" id="info"></div>
+<br>
+<div style="width: 100%;text-align: center;display:flex">
+    <button class="form-button" style="width: 100px;" type="button" onclick="changeSection('-')">&lt;</button>
+    <div id="sec-label" style="width: 20px; height: auto;border: 1px solid;border-radius: 3px;">1</div>
+    <button class="form-button" style="width: 100px;" type="button" onclick="changeSection('+')">&gt;</button>
+</div>
+<form class="my-form">
+    <div class="" id="sec1" data-num=1>
+        <p style="font-size: 20px;align-items: center;">Tổng quan dự án</p>
+        {{form.as_p}}
+        <p>Ngân sách:</p>
+        <div style="width: 100%;max-height: 400px;height: auto;overflow-y:auto;">
+            <table style="background-color: aliceblue;width: 100%;height: auto;padding: 10px 5px 10px 5px;border: 1px solid;border-collapse: collapse;">
+                <tr>
+                    <td style="width: 50%;background-color: brown;border: 1px solid;">Ngân sách dự án</td>
+                    <td style="width: 50%;border: 1px solid;text-align: right;">{{budget}}</td>
+                </tr>
+                <tr>
+                    <td style="width: 50%;background-color: brown;border: 1px solid;">Sử dụng</td>
+                    <td style="width: 50%;border: 1px solid;text-align: right;">{{budgetUsed}}</td>
+                </tr>
+                <tr>
+                    <td style="width: 50%;background-color: brown;border: 1px solid;">Dư lại</td>
+                    <td style="width: 50%;border: 1px solid;text-align: right;">{{budgetNotUse}}</td>
+                </tr>
+            </table>
+        </div>
+    </div>
+    <div id="sec2" data-num=2 class="hidden">
+        <p style="font-size: 20px;align-items: center;">Thành viên dự án</p>
+        <p>Quản lý dự án:</p>
+            <div class="memberShow">
+                <div>
+                    <img class="memberAvatar" src="{{managerInfo.Avatar}}">
+                </div>
+                <div class="memberInfo">
+                    Tên: <strong>{{managerInfo.Name}}</strong>
+                    <p class="label">Email: </p>
+                    <p class="highline">{{managerInfo.Email}}</p>
+                    <p class="label">Các nhóm tham gia: </p>
+                    <p class="highline">{{managerInfo.GroupJoin}}</p>
+                    <p class="label">Thực hiện các nhiệm vụ: </p>
+                    <p class="highline">{{managerInfo.Assign}}</p>
+                </div>
+            </div>
+        <p>Khách hàng:</p>
+            <div class="memberList">
+                {% for c in clientList %}
+                <div class="memberShow">
+                    <div>
+                        <img class="memberAvatar" src="{{c.Avatar}}">
+                    </div>
+                    <div class="memberInfo">
+                        Tên: <strong>{{c.Name}}</strong>
+                        <p class="label">Email: </p>
+                        <p class="highline">{{c.Email}}</p>
+                        <p class="label">Các nhóm tham gia: </p>
+                        <p class="highline">{{c.GroupJoin}}</p>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        <p>Thành viên phát triển:</p>
+            <div class="memberList">
+                {% for m in memberList %}
+                <div class="memberShow">
+                    <div>
+                        <img class="memberAvatar" src="{{m.Avatar}}">
+                    </div>
+                    <div class="memberInfo">
+                        Tên: <strong>{{m.Name}}</strong>
+                        <p class="label">Email: </p>
+                        <p class="highline">{{m.Email}}</p>
+                        <p class="label">Các nhóm tham gia: </p>
+                        <p class="highline">{{m.GroupJoin}}</p>
+                        <p class="label">Thực hiện các nhiệm vụ: </p>
+                        <p class="highline">{{m.Assign}}</p>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+    </div>
+    <div id="sec3" data-num=3 class="hidden">
+        <p style="font-size: 20px;align-items: center;">Các bản báo cáo</p>
+        <div style="display: flex;"><div>Nhiệm vụ:</div><strong id="mission-label" class="highline"></strong></div>
+        <p>Danh sách báo cáo thực hiện</p>
+        <div class="hidden" id="reposts"></div>
+        <p>Danh sách báo cáo kiểm tra</p>
+        <div class="hidden" id="checks"></div>
+        <hr>
+        <p>Danh sách báo cáo dự án:</p>
+            {% if lenRepost > 0 %}
+            <div class="repostList">
+                {% for r in reposts %}
+                <a href="/project/readProjectRepost/{{r.id}}?token={{token}}" class="optionBtn"><div class="repostShow">Báo cáo ngày: {{r.date}}</div></a>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p>Không có báo cáo</p>
+            {% endif %}
+    </div>
+    <div id="sec4" data-num=4 class="hidden">
+        <p style="font-size: 20px;align-items: center;">Các file chia sẻ</p>
+        <table class="fileList">
+            <thead>
+                <tr>
+                    <td style="text-align: center;"><strong>Tên file</strong></td>
+                    <td style="text-align: center;"><strong>Người tải lên</strong></td>
+                    <td style="text-align: center;"><strong>Ngày tải lên</strong></td>
+                    <td style="text-align: center;"><strong>Lựa chọn</strong></td>
+                </tr>
+            </thead>
+            {% for f in files %}
+            <tr>
+                <td>{{f.name}}</td>
+                <td>{{f.uploader}}</td>
+                <td>{{f.uploadDate}}</td>
+                <td><p><a href="/project/watchFile/?url={{f.url}}&name={{f.name}}" class="optionBtn">Xem trước</a></p><a href="/project/downloadFile/?url={{f.url}}&name={{f.name}}" class="optionBtn">Tải xuống</a><p></p></td>
+            </tr>
+            {% endfor %}
+        </table>
+    </div>
+</form>
+<style>
+body {
+    font-size: 18px;
+}
+.hidden {
+    display: none;
+}
+.big-table {
+    max-width: 100%;
+    height: auto;
+    max-height: 500px;
+    display: block;
+    margin-top: 10px;
+    border-collapse: collapse;
+    overflow-x: auto;
+    overflow-y: auto;
+    position: relative;
+    z-index: 1;
+}
+.d {
+    border: 1px solid;
+    width: 30px;
+    height: 20px;
+    text-align: center;
+}
+.l {
+    border: 1px solid;
+    width: 30px;
+    height: 20px;
+    background-color:darkgrey;
+    position: sticky;
+    left: 0;
+}
+.repostShow {
+    background-color: darkgray;
+    text-align: center;
+    align-self: center;
+    font-size: 14px;
+    margin-top: 5px;
+    padding-top: 5px;
+    width: 100%;
+    height: 30px;
+}
+.repostList {
+    border: 2px solid;
+    display: flex;
+    flex-direction: column;
+    background-color: white;
+    margin-bottom: 10px;
+    width: 250px;
+    height: auto;
+    max-height: 400px;
+    overflow-y: auto;
+}
+.overlay {
+    position: absolute;
+    padding: 10px 10px 10px 10px;
+    top: 60px;
+    right: 50px;
+    width: auto;
+    height: auto;
+    max-width: 250px;
+    max-height: 200px;
+    overflow-y: auto;
+    word-wrap: break-word;
+    background-color: rgba(255, 255, 0, 0.9);
+    z-index: 999;
+}
+th {
+    position: sticky;
+    top: 0;
+    background-color:coral;
+    height: 20px;
+    border: 1px solid;
+}
+.memberShow {
+    display:flex;
+    background-color: darkgray;
+    padding: 20px 0px 20px 0px;
+    margin-top: 5px;
+    width: 100%;
+    height: auto;
+}
+.memberShow div {
+    padding-left: 20px;
+    padding-right: 20px;
+}
+.memberShow .memberAvatar {
+    border: 2px solid;
+    border-radius: 2px;
+    width: 60px; 
+    height: 60px;
+}
+.memberShow .memberInfo {
+    margin-left: 20px;
+    font-size: 15px; 
+    text-align: left;
+}
+.memberList {
+    border: 2px solid;
+    display: flex;
+    flex-direction: column;
+    background-color: white;
+    margin-bottom: 10px;
+    width: 400px;
+    height: auto;
+    max-height: 700px;
+    overflow-y: auto;
+}
+.label {
+    margin-bottom: 0px;
+}
+.highline {
+    width: auto;
+    background-color: aliceblue;
+    border: 1px saddlebrown;
+    border-radius: 3px;
+    margin-top: 2px;
+    padding-left: 3px;
+    padding-right: 3px;
+}
+.fileList {
+    border: 2px solid;
+    border-radius: 3px;
+    background-color:cadetblue;
+    margin-bottom: 10px;
+    width: 100%;
+    height: auto;
+    max-height: 400px;
+    overflow-y: auto;
+    border-collapse: collapse;
+}
+.fileList td {
+    width: 20%;
+    border: 1px solid;
+}
+</style>
+<script>
+    const wsEndpoint = `ws://${window.location.host}/ws/getRepostHandel/{{projectID}}`;
+    const socket = new WebSocket(wsEndpoint);
+
+    socket.addEventListener('message', function(event) {
+        let data = JSON.parse(event.data);
+        if (data["type"] == "repost") {
+            repostShow.classList.add("repostList")
+            repostShow.classList.remove("hidden")
+            repostShow.innerHTML = ""
+            data["list"].forEach(r => {
+                repostShow.innerHTML += `<a href="/project/readRepost/${r.id}?token=${token}" class="optionBtn"><div class="repostShow">Báo cáo ngày: ${r.date}</div></a>`
+            });
+        }
+        if (data["type"] == "check") {
+            checkShow.classList.add("repostList")
+            checkShow.classList.remove("hidden")
+            checkShow.innerHTML = ""
+            data["list"].forEach(r => {
+                checkShow.innerHTML += `<a href="/project/readCheck/${r.id}?token=${token}" class="optionBtn"><div class="repostShow">Báo cáo ngày: ${r.date}</div></a>`
+            });
+        }
+    })
+    var dataInfo = null;
+    var dataRepost = null;
+    var sectionSelect = 1;
+    var secLabel = document.getElementById("sec-label");
+    var missionLabel = document.getElementById("mission-label");
+    var repostShow = document.getElementById("reposts")
+    var checkShow = document.getElementById("checks")
+    var sections = [document.getElementById("sec1"), document.getElementById("sec2"), document.getElementById("sec3"), document.getElementById("sec4")];
+    document.addEventListener("DOMContentLoaded", function() {
+    var table = document.getElementById("myTable");
+    var rows = table.getElementsByTagName("tr");
+    var info = document.getElementById("info");
+
+    for (var i = 0; i < rows.length; i++) {
+        rows[i].addEventListener("click", function() {
+            dataInfo = this.getAttribute("data-info");
+            if (dataInfo == null) {
+                info.innerHTML = "";
+                info.classList.remove("overlay");
+                info.classList.add("hidden");
+                repostShow.classList.add("hidden")
+                repostShow.classList.remove("repostList")
+                checkShow.classList.add("hidden")
+                checkShow.classList.remove("repostList")
+                missionLabel.innerText = ""
+            } else {
+                dataInfo = dataInfo.split(",");
+                info.innerHTML = "";
+                info.classList.remove("hidden");
+                info.classList.add("overlay");
+                if (dataInfo.length > 8) {
+                    info.innerHTML = '<p>Tên: '+dataInfo[1]+'</p><p>Ngân sách: '+dataInfo[2]+'</p><p>Tiến độ: '+dataInfo[3]+'%</p><p>Bắt đầu: '+dataInfo[4]+'</p><p>Kết thúc: '+dataInfo[5]+'</p><p>Bắt đầu thực tế: '+dataInfo[11]+'</p><p>Kết thúc thực tế: '+dataInfo[12]+'</p><p>Mô tả: '+dataInfo[7]+'</p><p>Phân công: '+dataInfo[8]+'</p>';
+                    openSection(3);
+                    missionLabel.innerText = dataInfo[1];
+                    socket.send(JSON.stringify({
+                        "task":dataInfo[0]
+                    }))
+                } else {
+                    info.innerHTML = '<p>Tên: '+dataInfo[1]+'</p><p>Ngân sách: '+dataInfo[2]+'</p><p>Tiến độ: '+dataInfo[3]+'%</p><p>Bắt đầu: '+dataInfo[4]+'</p><p>Kết thúc: '+dataInfo[5]+'</p>';
+                }
+            }
+        });
+    }
+});
+    function changeSection(order) {
+        if (order == "+") {
+            sectionSelect = sectionSelect + 1;
+        } else {
+            sectionSelect = sectionSelect - 1;
+        }
+        if (sectionSelect < 1) {
+            sectionSelect = sections.length;
+        }
+        if (sectionSelect > sections.length) {
+            sectionSelect = 1;
+        }
+        openSection(sectionSelect);
+    }
+    function openSection(number) {
+        closeSection();
+        sectionSelect = number
+        secLabel.innerText = `${sectionSelect}`
+        sections.forEach(sec => {
+            if (sec.getAttribute("data-num") == number) {
+                sec.classList.remove("hidden");
+            }
+        });
+    }
+    function closeSection() {
+        sections.forEach(sec => {
+            sec.classList.add("hidden");
+        });
+    }
+</script>
+{% endblock %}

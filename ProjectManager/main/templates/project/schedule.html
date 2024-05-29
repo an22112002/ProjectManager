@@ -1,0 +1,607 @@
+{% extends "basic.html" %}
+{% block title %}Lập lịch trình{% endblock %}
+{% block intro %}{% endblock %}
+{% block option %}<a class="optionBtn" href="homepage?token={{token}}">Quay lại</a>{% endblock %}
+{% block head %}
+<script src="/admin/jsi18n/"></script>
+<script src="/static/admin/js/calendar.js"></script>
+<script src="/static/admin/js/admin/DateTimeShortcuts.js"></script>
+<script src="/static/admin/js/core.js"></script>
+{% endblock %}
+{% block content %}
+<script>
+    var projectID = '{{projectID}}';
+    var memberID = '{{memberID}}';
+    var pos = '{{pos}}';
+    var info_object=null;
+    var type=null;
+    var order=null;
+    var option=null;
+    let mark = null;
+    let iColor = 0;
+    let color = ["rgb(255, 0, 0)","rgb(255, 128, 0)","rgb(255, 128, 128)","rgb(255, 255, 128)",
+        "rgb(0, 255, 0)","rgb(128, 255, 0)","rgb(128, 255, 128)","rgb(128, 255, 255)",
+        "rgb(0, 0, 255)","rgb(128, 0, 255)","rgb(128, 128, 255)","rgb(255, 128, 255)"]
+</script>
+<table id="myTable" class="big-table">
+    <thead>
+        <tr style="width: 100%;">
+            <th style="min-width: 200px;">Công việc</th>
+            <th style="width: 90px;">Ngân sách</th>
+            <th style="width: 90px;">Tiến độ</th>
+            <th style="width: auto;" colspan="{{lenArr}}">Thời gian</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr data-info="addBeginPhase">
+            <td class="l-add">Thêm giai đoạn</td>
+            <td class="d"></td>
+            <td class="d"></td>
+            {% for date in arrDatesLimit %}
+            <td class="d">{{date}}</td>
+            {% endfor %}
+        </tr>
+        {% for mission in missions %}
+        <tr id="{{mission.id}}">
+            <script>
+                if ('{{mission.type}}'=="task") {
+                    document.getElementById("{{mission.id}}").setAttribute(
+                        "data-info", '{{mission.ID}}~{{mission.Name}}~{{mission.Budget}}~{{mission.Progress}}~{{mission.FullStartDate}}~{{mission.FullEndDate}}~{{mission.Order}}~{{mission.Description}}~{{mission.Assigner}}~{{mission.Assign.pk}}~{{mission.Assign.Id_member.pk}}');
+                } else {
+                    document.getElementById("{{mission.id}}").setAttribute(
+                        "data-info", '{{mission.ID}}~{{mission.Name}}~{{mission.Budget}}~{{mission.Progress}}~{{mission.FullStartDate}}~{{mission.FullEndDate}}~{{mission.Order}}');
+                }
+            </script>
+            <td class="l">{% if mission.type == "phase" %}<strong>{{mission.Name}}</strong>{% else %}{{mission.Name}}{% endif %}</td>
+            <td class="d">{{mission.Budget}}</td>
+            <td class="d">{{mission.Progress}}%</td>
+            <script>mark = false;</script>
+            {% for date in arrDates %}
+            <script>
+                if ('{{date}}'=='{{mission.FullStartDate}}') {
+                    mark = true;
+                }
+                if (mark) {
+                    if ('{{date}}'=='{{today}}') {
+                        document.getElementById("{{mission.id}}").innerHTML += '<td class="d" style="background-color: '+ color[iColor]+';">|</td>'
+                    } else {
+                        document.getElementById("{{mission.id}}").innerHTML += '<td class="d" style="background-color: '+ color[iColor]+';"></td>'
+                    }
+                } else {
+                    if ('{{date}}'=='{{today}}') {
+                        document.getElementById("{{mission.id}}").innerHTML += '<td class="d">|</td>'
+                    } else {
+                        document.getElementById("{{mission.id}}").innerHTML += '<td class="d"></td>'
+                    }
+                }
+                if ('{{date}}'=='{{mission.FullEndDate}}') {
+                    mark = false;
+                    iColor += 1;
+                    if (iColor == color.length) {iColor=0}
+                }
+            </script>
+            {% endfor %}
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+<div class="hidden" id="info"></div>
+<div class="hidden" id="option-box">
+    <button class="hidden" onclick="add()" id="addBtn">Thêm</button>
+    <button class="hidden" onclick="edit()" id="editBtn">Sửa</button>
+    <button class="hidden" onclick="del()" id="delBtn">Xóa</button>
+    <button class="hidden" onclick="addFirstTask()" id="addTaskBtn">Thêm nhiệm vụ</button>
+    <button class="hidden" onclick="assignTask()" id="assignBtn">Phân công</button>
+    <button class="hidden" onclick="setProgressPage()" id="progressBtn">Tiến độ</button>
+    <button class="hidden" onclick="makeReport()" id="reportBtn">Báo cáo</button>
+</div>
+<form class="hidden" method="post" id="form-phase">
+    <p>Giai đoạn</p>
+    {{formPhase.as_p}}
+    <button type="button" onclick="sendFormPhase()">Lưu</button>
+</form>
+<form class="hidden" method="post" id="form-task">
+    <p>Nhiệm vụ</p>
+    {{formTask.as_p}}
+    <button type="button" onclick="sendTaskPhase()">Lưu</button>
+</form>
+<form class="hidden" method="post" id="form-assign">
+    <p id="labelAssign"></p>
+    <label>Nhóm</label><br>
+    <select style="width: 100%;" id="assignFormGroup">
+        <option value="" selected>--None--</option>
+        {% for group in groupsAssignForm %}
+        <option value="{{group.pk}}">{{group.GroupName}}</option>
+        {% endfor %}
+    </select><br><br>
+    <label>Thành viên</label><br>
+    <select style="width: 100%;" id="assignFormMember">
+    </select><br><br>
+    <button type="button" onclick="addAssign()">Lưu</button>
+</form>
+
+<style>
+.hidden {
+    display: none;
+}
+.big-table {
+    max-width: 100%;
+    height: auto;
+    max-height: 500px;
+    display: block;
+    margin-top: 10px;
+    border-collapse: collapse;
+    overflow-x: auto;
+    overflow-y: auto;
+    position: relative;
+    z-index: 1;
+}
+.d {
+    border: 1px solid;
+    width: 30px;
+    height: 20px;
+    text-align: center;
+}
+.l {
+    border: 1px solid;
+    width: 30px;
+    height: 20px;
+    background-color:darkgrey;
+    position: sticky;
+    left: 0;
+}
+.l-add {
+    border: 1px solid;
+    width: 30px;
+    height: 20px;
+    position: sticky;
+    left: 0;
+    background-color: burlywood;
+}
+.l-add:hover {
+    background-color:darkkhaki;
+}
+.optionBox {
+    display: flex;
+    width: 1200px;
+    height: 100%;
+    margin: 20px 0px 20px 0px;
+    padding: 30px 30px 30px 30px;
+    border: 2px solid;
+}
+.overlay {
+    position: absolute;
+    padding: 10px 10px 10px 10px;
+    top: 100px;
+    right: 50px;
+    width: auto;
+    height: auto;
+    max-width: 200px;
+    word-wrap: break-word;
+    background-color: rgba(255, 255, 0, 0.9);
+    z-index: 999;
+}
+th {
+    position: sticky;
+    top: 0;
+    background-color:coral;
+    height: 20px;
+    border: 1px solid;
+}
+/* calender */
+.datetimeshortcuts {
+    line-height: 140%;
+}
+.datetimeshortcuts a{
+    color:rgb(67, 135, 135);
+    text-decoration: none;
+    transition: color 0.15s;
+}
+.datetimeshortcuts a .date-icon {
+    background: url(/static/admin/img/icon-calendar.svg) 0 0 no-repeat;
+    top: -1px;
+    position: relative;
+    display: inline-block;
+    vertical-align: middle;
+    height: 16px;
+    width: 16px;
+    overflow: hidden;
+}
+.calendarbox.module {
+    margin: 5px auto;
+    font-size: 0.75rem;
+    width: 19em;
+    text-align: center;
+    background: white;
+    color: black;
+    border: 1px solid;
+    border-radius: 4px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+    overflow: hidden;
+}
+.calendarbox.module .calendarnav-previous, .calendarbox .calendarnav-next {
+    display: block;
+    position: absolute;
+    top: 8px;
+    width: 15px;
+    height: 15px;
+    text-indent: -9999px;
+    padding: 0;
+}
+.calendarnav-previous {
+    left: 10px;
+    background: url(/static/admin//img/calendar-icons.svg) 0 0 no-repeat;
+}
+.calendarnav-next {
+    right: 10px;
+    background: url(/static/admin//img/calendar-icons.svg) 0 -30px no-repeat;
+}
+.calendarbox.module .calendar {
+    margin: 0;
+    padding: 0;
+}
+.calendar table {
+    margin: 0;
+    padding: 0;
+    border-collapse: collapse;
+    background: white;
+    width: 100%;
+}
+.calendar caption, .calendarbox h2 {
+    margin: 0;
+    height: 30px;
+    text-align: center;
+    border-top: none;
+    font-weight: 700;
+    font-size: 0.75rem;
+    color: #333;
+    background: green;
+
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
+.calendar td a:focus, .timelist a:focus, .calendar td a:hover, .timelist a:hover {
+    background: #79aec8;
+    color: white;
+}
+.calendar table {
+    border-collapse: collapse;
+}
+.calendar td a, .timelist a {
+    display: block;
+    font-weight: 400;
+    padding: 6px;
+    text-decoration: none;
+    color: #666;
+}
+.calendar th {
+    padding: 8px 5px;
+    background: #f8f8f8;
+    border-bottom: 1px solid #ccc;
+    font-weight: 400;
+    font-size: 0.75rem;
+    text-align: center;
+    color: #666;
+}
+a:link, a:visited {
+    color: var(--link-fg);
+    text-decoration: none;
+    transition: color 0.15s, background 0.15s;
+}
+.calendar-shortcuts {
+    background: #fff;
+    color: #666;
+    font-size: 0.6875rem;
+    line-height: 0.6875rem;
+    border-top: 1px solid #e8e8e8;
+    padding: 8px 0;
+}
+.calendar-cancel {
+    margin: 0;
+    padding: 4px 0;
+    font-size: 0.75rem;
+    background: #747474;
+    border-top: 1px solid #ccc;
+    color: #fff;
+}
+/* end calender */
+</style>
+<script>
+    const wsEndpoint = `ws://${window.location.host}/ws/scheduleHandel`;
+    const socket = new WebSocket(wsEndpoint);
+
+    var assignFormMember = document.getElementById("assignFormMember")
+    var assignFormGroup = document.getElementById("assignFormGroup")
+
+    socket.addEventListener('message', function(event) {
+        let data = JSON.parse(event.data);
+        if (data["type"] == "reload") {
+            location.reload(true);
+        }
+        if (data["type"] == "respone") {
+            alert(data["content"]);
+            if (data["reload"] == true) {location.reload(true);}
+        }
+        if (data["type"] == "setupAssign") {
+            document.getElementById("labelAssign").innerText = "Chưa được phân công"
+            assignFormMember.innerHTML = ""
+            data["members"].forEach(member => {
+                assignFormMember.innerHTML += `<option value="${member.id}">${member.name}</option>`
+            });
+            assignFormGroup.querySelector(`option[value=""]`).selected = true;
+            assignFormMember.querySelector(`option[value="${memberID}"]`).selected = true;
+        }
+        if (data["type"] == "setupAssignSave") {
+            document.getElementById("labelAssign").innerText = "Đã được phân công"
+            assignFormMember.innerHTML = ""
+            data["members"].forEach(member => {
+                assignFormMember.innerHTML += `<option value="${member.id}">${member.name}</option>`
+            });
+            assignFormGroup.querySelector(`option[value="${data["selectedGroup"]}"]`).selected = true;
+            assignFormMember.querySelector(`option[value="${data["selectedMem"]}"]`).selected = true;
+        }
+        if (data["type"] == "responeAssign") {
+            assignFormMember.innerHTML = ""
+            data["members"].forEach(member => {
+                assignFormMember.innerHTML += `<option value="${member.id}">${member.name}</option>`
+            });
+        }
+    });
+
+    assignFormGroup.addEventListener('change', function() {
+        socket.send(JSON.stringify({
+            "option":"getOptionAssign",
+            "groupID":this.value,
+            "projectID":projectID
+        }))
+    })
+    
+    var optionBox = document.getElementById("option-box");
+    var formPhase = document.getElementById("form-phase");
+    var formTask = document.getElementById("form-task");
+    var formAssign = document.getElementById("form-assign");
+    function add() {
+        closeOptionBox();
+        option = "add"
+        if (type=="phase") {
+            showAddPhaseForm();
+            document.getElementById("id_PhaseName").value = ""
+            document.getElementById("id_StartDate").value = ""
+            document.getElementById("id_EndDate").value = ""
+        }
+        if (type=="task") {addTask();}
+    }
+    function edit() {
+        closeOptionBox();
+        option = "edit"
+        if (type=="phase") {
+            showAddPhaseForm();
+            document.getElementById("id_PhaseName").value = info_object[1]
+            document.getElementById("id_StartDate").value = info_object[4]
+            document.getElementById("id_EndDate").value = info_object[5]
+        }
+        if (type=="task") {
+            showAddTaskForm();
+            document.getElementById("id_TaskName").value = info_object[1]
+            document.getElementById("id_Description").value = info_object[7]
+            document.getElementById("id_Budget").value = info_object[2]
+            document.getElementById("id_taskStartDate").value = info_object[4]
+            document.getElementById("id_taskEndDate").value = info_object[5]
+        }
+    }
+    function del() {
+        closeOptionBox();
+        option = "delete"
+        if (type=="phase") {
+            let answer = confirm("Bạn có chắc chắn muốn xóa giai đoạn này?");
+            if (answer) {
+                socket.send(JSON.stringify({
+                    "option":option,
+                    "obj_Type":type,
+                    "order":order,
+                    "memberID":memberID,
+                    "projectID":projectID,
+                    "phaseID":info_object[0],
+                }))
+            }
+        }
+        if (type=="task") {
+            let answer = confirm("Bạn có chắc chắn muốn xóa nhiệm vụ này?");
+            if (answer) {
+                socket.send(JSON.stringify({
+                    "option":option,
+                    "obj_Type":type,
+                    "order":order,
+                    "memberID":memberID,
+                    "projectID":projectID,
+                    "taskID":info_object[0],
+                }))
+            }
+        }
+    }
+    function addFirstTask() {
+        type="task";
+        order="0";
+        addTask();
+    }
+    function addTask() {
+        closeOptionBox();
+        option = "add"
+        showAddTaskForm();
+        document.getElementById("id_TaskName").value = ""
+        document.getElementById("id_Description").value = ""
+        document.getElementById("id_Budget").value = ""
+        document.getElementById("id_taskStartDate").value = ""
+        document.getElementById("id_taskEndDate").value = ""
+    }
+    function assignTask() {
+        closeOptionBox();
+        option = "assign"
+        showAssignForm();
+    }
+    function addAssign() {
+        socket.send(JSON.stringify({
+            "option":"addAssign",
+            "taskID":info_object[0],
+            "memberID":assignFormMember.value,
+            "groupID":assignFormGroup.value,
+        }))
+    }
+    function makeReport() {
+        window.location.href = `/project/makeRepost/${info_object[9]}?token={{token}}`;
+    }
+    function setProgressPage() {
+        window.location.href = `/project/setProgress/${info_object[0]}?token={{token}}`;
+    }
+    function sendFormPhase() {
+        let form = new FormData(formPhase);
+        let jsonData = {};
+        let formData = {};
+        form.forEach((value, key) => {
+            formData[key] = value;
+        });
+        jsonData["option"] = option;
+        jsonData["order"] = order;
+        jsonData["obj_Type"] = type;
+        jsonData["memberID"] = memberID;
+        jsonData["projectID"] = projectID;
+        jsonData["formData"] = formData
+        if (option == "edit") {jsonData["id"] = info_object[0];}
+        socket.send(JSON.stringify(jsonData))
+    }
+    function sendTaskPhase() {
+        let form = new FormData(formTask);
+        let jsonData = {};
+        let formData = {};
+        form.forEach((value, key) => {
+            formData[key] = value;
+        });
+        if (info_object.length>8) {
+            jsonData["phaseID"] = "None";
+            jsonData["taskID"] = info_object[0];
+        } else {
+            jsonData["phaseID"] = info_object[0];
+        }
+        jsonData["option"] = option;
+        jsonData["order"] = order;
+        jsonData["obj_Type"] = type;
+        jsonData["memberID"] = memberID;
+        jsonData["projectID"] = projectID;
+        jsonData["formData"] = formData
+        socket.send(JSON.stringify(jsonData))
+    }
+    function showAddPhaseForm() {
+        formPhase.classList.remove("hidden");
+        formPhase.classList.add("my-form");
+    }
+    function showAddTaskForm() {
+        formTask.classList.remove("hidden");
+        formTask.classList.add("my-form");
+    }
+    function showAssignForm() {
+        formAssign.classList.remove("hidden");
+        formAssign.classList.add("my-form");
+        socket.send(JSON.stringify({
+            "option":"?assign",
+            "taskID":info_object[0],
+            "projectID":projectID
+        }))
+    }
+    function openOptionBox() {
+        optionBox.classList.remove("hidden");
+        optionBox.classList.add("optionBox");
+        if (pos=="0") {
+            if (type=="phase" && order=="0") {
+                addBtn.classList.remove("hidden");addBtn.classList.add("btn");
+            }
+            if (type=="phase" && order!="0") {
+                addBtn.classList.remove("hidden");addBtn.classList.add("btn");
+                editBtn.classList.remove("hidden");editBtn.classList.add("btn");
+                delBtn.classList.remove("hidden");delBtn.classList.add("btn");
+                addTaskBtn.classList.remove("hidden");addTaskBtn.classList.add("btn");
+            }
+            if (type=="task") {
+                addBtn.classList.remove("hidden");addBtn.classList.add("btn");
+                editBtn.classList.remove("hidden");editBtn.classList.add("btn");
+                delBtn.classList.remove("hidden");delBtn.classList.add("btn");
+                assignBtn.classList.remove("hidden");assignBtn.classList.add("btn");
+            }
+        }
+        if (type=="task") {
+            progressBtn.classList.remove("hidden");progressBtn.classList.add("btn");
+            if (info_object[10] == memberID) {
+                reportBtn.classList.remove("hidden");reportBtn.classList.add("btn");
+            }
+        }
+    }
+    function closeOptionBox() {
+        optionBox.classList.remove("optionBox");optionBox.classList.add("hidden");
+        addBtn.classList.remove("btn");addBtn.classList.add("hidden");
+        editBtn.classList.remove("btn");editBtn.classList.add("hidden");
+        delBtn.classList.remove("btn");delBtn.classList.add("hidden");
+        addTaskBtn.classList.remove("btn");addTaskBtn.classList.add("hidden");
+        assignBtn.classList.remove("btn");assignBtn.classList.add("hidden");
+        progressBtn.classList.remove("btn");progressBtn.classList.add("hidden");
+        reportBtn.classList.remove("btn");reportBtn.classList.add("hidden");
+    }
+    function closeAllForm() {
+        formPhase.classList.remove("my-form");
+        formPhase.classList.add("hidden");
+        formTask.classList.remove("my-form");
+        formTask.classList.add("hidden");
+        formAssign.classList.remove("my-form");
+        formAssign.classList.add("hidden");
+    }
+
+    document.addEventListener("DOMContentLoaded", function() {
+    var table = document.getElementById("myTable");
+    var rows = table.getElementsByTagName("tr");
+    var info = document.getElementById("info");
+
+    var addBtn = document.getElementById("addBtn");
+    var editBtn = document.getElementById("editBtn");
+    var delBtn = document.getElementById("delBtn");
+    var addTaskBtn = document.getElementById("addTaskBtn");
+    var assignBtn = document.getElementById("assignBtn");
+    var progressBtn = document.getElementById("progressBtn");
+    var reportBtn = document.getElementById("reportBtn");
+
+    for (var i = 0; i < rows.length; i++) {
+        rows[i].addEventListener("click", function() {
+            closeAllForm();
+            closeOptionBox();
+            dataInfo = this.getAttribute("data-info");
+            if (dataInfo == null) {
+                info.innerHTML = "";
+                info.classList.remove("overlay");
+                info.classList.add("hidden");
+            } else if (dataInfo == "addBeginPhase") {
+                type = "phase";
+                order = "0";
+                info_object = null;
+                info.innerHTML = "";
+                info.classList.remove("overlay");
+                info.classList.add("hidden");
+            } else {
+                dataInfo = dataInfo.split("~");
+                info.innerHTML = "";
+                info.classList.remove("hidden");
+                info.classList.add("overlay");
+                if (dataInfo.length > 8) {
+                    info.innerHTML = '<p>Tên: '+dataInfo[1]+'</p><p>Ngân sách: '+dataInfo[2]+'</p><p>Tiến độ: '+dataInfo[3]+'%</p><p>Bắt đầu: '+dataInfo[4]+'</p><p>Kết thúc: '+dataInfo[5]+'</p><p>Mô tả: '+dataInfo[7]+'</p><p>Phân công: '+dataInfo[8]+'</p>';
+                    type = "task";
+                    order = dataInfo[6];
+                    info_object = dataInfo
+                } else {
+                    info.innerHTML = '<p>Tên: '+dataInfo[1]+'</p><p>Ngân sách: '+dataInfo[2]+'</p><p>Tiến độ: '+dataInfo[3]+'%</p><p>Bắt đầu: '+dataInfo[4]+'</p><p>Kết thúc: '+dataInfo[5]+'</p>';
+                    type = "phase";
+                    order = dataInfo[6];
+                    info_object = dataInfo
+                }
+            }
+            openOptionBox();
+        });
+    }
+});
+</script>
+{% endblock %}

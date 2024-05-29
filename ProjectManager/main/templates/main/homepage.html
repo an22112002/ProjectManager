@@ -1,0 +1,186 @@
+{% extends "basic.html" %}
+{% block title %}Trang chủ{% endblock %}
+{% block intro %}Chào mừng{% endblock %}
+{% block option %}
+<a class="optionBtn" href="support/c/{{support}}">Hỗ trợ</a><a class="optionBtn" href="logout?token={{token}}">Đăng xuất</a>
+{% endblock %}
+{% block content %}
+<script src="/static/js/useCookie.js"></script>
+<script>
+    let support = "{{support}}"
+    let username = "{{username}}"
+    setCookie("support", support, 30)
+    setCookie("username", username, 30)
+    var token = getParameterByName("token")
+</script>
+<div style="display: flex;margin: 20px 0px 20px 0px;">
+    <div>
+        <div style="width: 300px;">
+            <ul style="padding-left: 0px;">
+                {% if position != "1" %}
+                <a href="createProject?token={{token}}"><li class="btn">Tạo dự án</li></a>
+                {% endif %}
+                <a href="editAccount?token={{token}}"><li class="btn">Chỉnh sửa tài khoản</li></a>
+                <a href="changePass?token={{token}}"><li class="btn">Đổi mật khẩu</li></a>
+            </ul>
+            {% if position != "1" %}
+            <div class="taskArray">
+                <p>Nhiệm vụ chưa hoàn thành</p>
+                {% if unfinishTasks %}
+                    {% for t in unfinishTasks %}
+                    <div class="task">Nhiệm vụ: {{t.NameTask}} - Dự án: {{t.NameProject}} - Tình trạng: {{t.Status}}</div>
+                    {% endfor %}
+                {% else %}
+                    <p style="font-size: 15px;">Không có nhiệm vụ chưa hoàn thành</p>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    <div style="width: 100%;display: flex;flex-direction: column;">
+        <p class="list-label">Danh sách dự án đang thực hiện</p>
+        <div style="width: 100%;display: flex;flex-wrap: wrap;">
+            <!--Danh sách các dự án đang thực hiện-->
+            {% for members in membersProjects%}
+                {% if members.Status == False %}
+                    <a href="projectHomepage/{{members.id_project}}/{{members.id_member}}?token={{token}}">
+                        <div class="projectShow">
+                            <img class="imgShow" src="/static/images/projectIcon.jpg">
+                            <strong class="limitText">{{members.NameProject}}</strong>
+                        </div>
+                    </a>
+                {% endif %}
+            {% endfor %}
+        </div>
+        <p class="list-label" style="background-color: rgb(9, 208, 142);">Danh sách dự án đã hoàn thành</p>
+        <div style="width: 100%;display: flex;flex-wrap: wrap;">
+            <!--Danh sách các dự án đã hoàn thành-->
+            {% for members in membersProjects%}
+                {% if members.Status == True %}
+                    <a href="/project/summaryProject/{{members.id_project}}?token={{token}}">
+                        <div class="finishProjectShow">
+                            <img class="imgShow" src="/static/images/projectIcon.jpg">
+                            <strong class="limitText">{{members.NameProject}}</strong>
+                        </div>
+                    </a>
+                {% endif %}
+            {% endfor %}
+        </div>
+    </div>
+</div>
+<style>
+    body {
+        font-size: 20px;
+    }
+    a {
+        text-decoration: none;
+        color: inherit;
+    }
+    .btn{
+        list-style-type: none;
+        background-color: aqua;
+        margin: 5px 0px 5px 0px;
+        padding: 5px 5px 5px 5px;
+        border: 1px solid;
+    }
+    .btn:hover{
+        background-color:blanchedalmond;
+        color:coral;
+        font-size: 26px;
+        transition: 0.3s;
+    }
+    .projectShow {
+        background-color: cadetblue;
+        display: flex;
+        flex-direction: column;
+        margin: 10px 10px 10px 10px;
+        padding: 10px 10px 10px 10px;
+        border: 2px slategray;
+        border-radius: 10px;
+        width: 200px;
+        height: 200px;
+    }
+    .projectShow:hover {
+        background-color: rgb(200, 255, 105);
+        height: auto;
+        transition: 0.3s;
+    }
+    .finishProjectShow {
+        background-color: rgb(23, 201, 82);
+        display: flex;
+        flex-direction: column;
+        margin: 10px 10px 10px 10px;
+        padding: 10px 10px 10px 10px;
+        border: 2px slategray;
+        border-radius: 10px;
+        width: 200px;
+        height: 200px;
+    }
+    .finishProjectShow:hover {
+        background-color: rgb(243, 149, 26);
+        height: auto;
+        transition: 0.3s;
+    }
+    .imgShow {
+        width: 180px;
+        height: 150px;
+        align-self: center;
+        margin-bottom: 10px;
+    }
+    .limitText {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .projectShow:hover .limitText {
+        white-space: normal;
+        overflow: visible;
+        text-overflow: inherit;
+    }
+    .taskArray {
+        background-color: gray;
+        border: 3px solid;
+        border-radius: 20px;
+        flex-direction: column;
+        padding-bottom: 10px;
+    }
+    .taskArray p {
+        padding-left: 10px;
+        margin-top: 5px;
+        margin-bottom: 5px;
+    }
+    .task {
+        background-color: bisque;
+        border-radius: 5px;
+        margin: 2px 5px 2px 5px;
+        padding-left: 5px;
+        font-size: 15px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .task:hover {
+        white-space: normal;
+        overflow: visible;
+        text-overflow: inherit;
+    }
+    .list-label {
+        background-color:cornflowerblue;
+        margin: 10px auto 10px 10px;
+        padding: 5px 5px 5px 5px;
+        border-radius: 3px;
+    }
+</style>
+<script>
+    function getCookie(name) {
+    var cookieArr = document.cookie.split("; ");
+    for (var i = 0; i < cookieArr.length; i++) {
+        var cookiePair = cookieArr[i].split("=");
+        if (name === cookiePair[0]) {
+            return decodeURIComponent(cookiePair[1]);
+        }
+    }
+    return null;
+}
+</script>
+{% endblock %}

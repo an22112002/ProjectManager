@@ -1,0 +1,144 @@
+{% extends "basic.html" %}
+{% block title %}Thành viên{% endblock %}
+{% block intro %}Thành viên trong dự án{% endblock %}
+{% block option %}{% if isManager == True %}<a class="optionBtn" href="addMember?token={{token}}">Thêm thành viên</a>{% endif %}<a class="optionBtn" href="/project/homepage?token={{token}}">Quay lại</a>{% endblock %}
+{% block content %}
+<form class="my-form" style="text-align: center;align-items: center;display: flex;flex-direction: column;" method="post">
+    <p>Danh sách thành viên</p>
+    {% if sendMembers %}
+    <div class="memberList">
+        <!--Danh sách thành viên-->
+        {% for member in sendMembers %}
+        <div class="memberShow">
+            {% if isManager == True %}
+            {% if member.position != 'Quản lý dự án' %}
+            <div>
+                <input type="checkbox" class="check" value="1" data-memberID="{{member.id_member}}">
+            </div>
+            {% endif %}
+            {% endif %}
+            <div>
+                <img class="memberAvatar" src="{{member.avatar}}">
+            </div>
+            <div class="memberInfo">
+                Tên: <strong>{{member.username}}</strong>
+                <p class="label">Kiểu người dùng: </p>
+                <p class="highline">{{member.position}}</p>
+                <p class="label">Email: </p>
+                <p class="highline">{{member.email}}</p>
+                <p>Online: {{member.online}}</p>
+                {% if member.position == "Khách hàng" %}
+                <p>Kết thúc dự án: {{member.allow}}</p>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    {% if isManager == True %}
+    <button type="button" class="form-button" onclick="remove()">Cách chức</button>
+    {% endif %}
+</form>
+<style>
+    body {
+        font-size: 18px;
+    }
+    .memberShow {
+        display:flex;
+        background-color: darkgray;
+        padding: 20px 0px 20px 0px;
+        margin-top: 5px;
+        width: 100%;
+        height: auto;
+    }
+    .memberShow div {
+        padding-left: 20px;
+    }
+    .memberShow .memberAvatar {
+        border: 2px solid;
+        border-radius: 2px;
+        width: 60px; 
+        height: 60px;
+    }
+    .memberShow .memberInfo {
+        margin-left: 20px;
+        font-size: 15px; 
+        text-align: left;
+    }
+    .memberShow .check {
+        scale: 2;
+        margin-left: auto;
+        margin-right: 10px;
+    }
+    .memberList {
+        border: 2px solid;
+        display: flex;
+        flex-direction: column;
+        background-color: white;
+        margin-bottom: 10px;
+        width: 400px;
+        height: auto;
+        max-height: 700px;
+        overflow-y: auto;
+    }
+    .label {
+        margin-bottom: 0px;
+    }
+    .highline {
+        background-color: aliceblue;
+        border: 1px saddlebrown;
+        border-radius: 3px;
+        margin-top: 2px;
+        padding-left: 3px;
+        padding-right: 3px;
+    }
+</style>
+<script>
+    const wsEndpoint = `ws://${window.location.host}/ws/memberHandel/{{memberID}}/{{projectID}}`;
+    const socket = new WebSocket(wsEndpoint);
+
+    var checkboxes = document.querySelectorAll('input[type="checkbox"]');
+    var removeMemberID = [];
+
+    socket.addEventListener('message', function(event) {
+        let data = JSON.parse(event.data);
+        if (data["type"] == "respone") {
+            alert(data["content"]);
+            location.reload(true);
+        }
+        if (data["type"] == "reload") {
+            location.reload(true);
+        }
+    });
+
+    function remove() {
+        checkboxes.forEach(function(checkbox) {
+            if (checkbox.checked) {
+                removeMemberID.push(checkbox.getAttribute("data-memberID"));
+            }
+        })
+        if (removeMemberID.length == 0) {
+            alert("Bạn chưa chọn ai để cách chức cả");
+        } else {
+            let answer = confirm("Bạn có chắc chắn muốn cách chức những người đã chọn?");
+            if (answer) {
+                socket.send(JSON.stringify({
+                    "type":"remove",
+                    "listMemberID":removeMemberID,
+                }))
+            }
+        }
+        removeMemberID = [];
+    }
+
+    function addUser(userID) {
+        let answer = confirm("Bạn có chắc chắn muốn thêm người này vào dự án?");
+            if (answer) {
+                socket.send(JSON.stringify({
+                    "type":"add",
+                    "userID":userID,
+                }))
+            }
+    }
+</script>
+{% endblock %}

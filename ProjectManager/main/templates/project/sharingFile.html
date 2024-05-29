@@ -1,0 +1,82 @@
+{% extends "basic.html" %}
+{% block title %}File chia sẻ{% endblock %}
+{% block intro %}File chia sẻ{% endblock %}
+{% block option %}<a class="optionBtn" onclick="upload()">Tải lên</a><a class="optionBtn" href="homepage?token={{token}}" id="back">Quay lại</a>{% endblock %}
+{% block content %}
+{% if message %}
+<script>
+    alert("{{ message }}");
+    document.getElementById("back").click()
+</script>
+{% endif %}
+<form class="form-file" method="post" enctype="multipart/form-data">
+    {%csrf_token%}
+    <input type="file" class="hidden" id="inputFile" name="file">
+    <button class="hidden" type="submit" id="submitBtn"></button>
+    <table class="fileList">
+        <thead>
+            <tr>
+                <td><strong>Tên file</strong></td>
+                <td><strong>Người tải lên</strong></td>
+                <td><strong>Ngày tải lên</strong></td>
+                <td><strong>Lựa chọn</strong></td>
+            </tr>
+        </thead>
+        {% for f in files %}
+        <tr>
+            <td>{{f.name}}</td>
+            <td>{{f.uploader}}</td>
+            <td>{{f.uploadDate}}</td>
+            <td><a href="watchFile/?url={{f.url}}&name={{f.name}}" class="optionBtn">Xem trước</a><a href="downloadFile/?url={{f.url}}&name={{f.name}}" class="optionBtn">Tải xuống</a>{% if position == "0"%}<a href="deleteFile/?uploadDate={{f.fullUploadDate}}&name={{f.name}}&token={{token}}" class="optionBtn">Xóa file</a>{% endif %}</td>
+        </tr>
+        {% endfor %}
+    </table>
+</form>
+<style>
+    .hidden {
+        display: none;
+    }
+    .fileList {
+        border: 2px solid;
+        border-radius: 3px;
+        background-color:cadetblue;
+        margin-bottom: 10px;
+        width: 1000px;
+        height: auto;
+        max-height: 400px;
+        overflow-y: auto;
+        border-collapse: collapse;
+    }
+    .form-file {
+        text-align: center;
+        align-items: center;
+        display: flex;
+        flex-direction: column;
+        margin: 10px auto 10px auto;
+        padding: 10px 10% 10px 10%;
+        background-color: antiquewhite;
+        border: 2px solid;
+        border-radius: 8px;
+    }
+    td {
+        width: 20%;
+        border: 1px solid;
+    }
+</style>
+<script>
+    var inputFile = document.getElementById("inputFile")
+    var submitBtn = document.getElementById("submitBtn")
+    inputFile.addEventListener('change', function() {
+        let file = this.files[0];
+        // kích thước tối đa 5MB
+        if (file.size <= 5242880) {
+            submitBtn.click()
+        } else {
+            alert("Kích thước file quá lớn, chúng tôi chỉ cho chia sẻ các file từ 5MB trở xuống, hãy chọn các phương pháp khác để chia sẻ")
+        }
+    })
+    function upload() {
+        inputFile.click()
+    }
+</script>
+{% endblock %}

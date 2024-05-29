@@ -1,0 +1,38 @@
+{% extends "basic.html" %}
+{% block title %}Chỉnh sửa tài khoản{% endblock %}
+{% block intro %}Thay đổi thông tin người dùng{% endblock %}
+{% block option %}<a class="optionBtn" href="homepage?token={{token}}">Quay lại</a>{% endblock %}
+{% block content %}
+<form class="my-form" method="post" enctype="multipart/form-data">
+    <div style="text-align: center;">
+        <img id="avatarShow" style="width: 200px;height: 200px; border-radius: 10px; border: 2px solid;" src="{{avatar}}">
+    </div>
+    {%csrf_token%}
+    {{form.as_p}}
+    <button class="form-button" type="submit">Lưu thay đổi</button>
+    <button class="form-button" type="button" onclick="changePass()">Đổi mật khẩu</button>
+    <a class="hidden" href="changePass?token={{token}}" id="cp"></a>
+</form>
+<style>
+    body {
+        font-size: 18px;
+    }
+</style>
+<script>
+    function changePass() {
+        let link = document.getElementById("cp");
+        console.log("h")
+        link.click();
+    }
+    document.getElementById('id_Avatar').addEventListener('change', function(event) {
+        var file = event.target.files[0];
+
+        var reader = new FileReader();
+        reader.onload = function(e) {
+            var imgElement = document.getElementById('avatarShow');
+            imgElement.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+    });
+</script>
+{% endblock %}

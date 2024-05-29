@@ -1,0 +1,192 @@
+{% extends "basic.html" %}
+{% block title %}Cài đặt nhóm{% endblock %}
+{% block intro %}Cài đặt nhóm{% endblock %}
+{% block option %}<a class="optionBtn" href="/group/editGroup/{{groupID}}?token={{token}}">Quay lại</a>{% endblock %}
+{% block content %}
+<form class="my-form" style="text-align: center;align-items: center;display: flex;flex-direction: column;"  method="post">
+    <p>Thêm thành viên</p>
+    {%csrf_token%}
+    <div>
+        <input type="text" class="searchBox" name="searchStr" value="{{searchStr}}">    <button class="form-button" type="submit">Tìm</button>
+    </div>
+    {% if searchStr %}
+        {% if members %}
+            <div class="memberList">
+                <!--Danh sách người dùng-->
+                {% for member in members %}
+                    <div class="memberShow">
+                        <div>
+                            <img class="memberAvatar" src="{{member.avatar}}">
+                        </div>
+                        <div class="memberInfo">
+                            Tên: <strong>{{member.name}}</strong>
+                            <p class="label">Chức vụ: </p>
+                            <p class="highline">{{member.position}}</p>
+                            <p>Online: {{member.online}}</p>
+                        </div>
+                        <div>
+                            <button onclick="addParticipant('{{member.memberID}}')" class="form-button">Thêm</button>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p>Không có kết quả</p>
+        {% endif %}
+    {% endif %}
+</form>
+<form class="my-form" style="text-align: center;align-items: center;display: flex;flex-direction: column;">
+    <p>Thành viên nhóm</p>
+    <div class="memberList">
+        <!--Danh sách người dùng-->
+        {% for p in participants %}
+        <div class="memberShow">
+            <div>
+                <img class="memberAvatar" src="{{p.avatar}}">
+            </div>
+            {% if p.isManager == False %}
+            <div class="memberInfo">
+                Tên: <strong>{{p.name}}</strong>
+                <p style="margin-bottom: 2px;">Chức vụ trong nhóm</p>
+                <select data-ID="{{p.participantID}}" data-userName="{{p.name}}" class="selectPos">
+                    {% if p.position == "0" %}
+                    <option selected value="0">Trưởng phòng</option>
+                    <option value="1">Thành viên</option>
+                    {% else %}
+                    <option value="0">Trưởng phòng</option>
+                    <option selected value="1">Thành viên</option>
+                    {% endif %}
+                </select>
+                <p>Online: {{p.online}}</p>
+            </div>
+            <div>
+                <button onclick="removeParticipant('{{p.participantID}}')" class="form-button">Cách chức</button>
+            </div>
+            {% else %}
+            <div class="memberInfo">
+                Tên: <strong>{{p.name}}</strong>
+                <p style="margin-bottom: 2px;">Chức vụ trong nhóm</p>
+                <p style="background-color: white;border: 1px solid;padding-left: 3px;">Trưởng phòng</p>
+                <p>Online: {{p.online}}</p>
+            </div>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+</form>
+<style>
+    body {
+        font-size: 18px;
+    }
+    .memberShow {
+        display:flex;
+        background-color: darkgray;
+        padding: 20px 0px 20px 0px;
+        margin-top: 5px;
+        width: 100%;
+        height: auto;
+    }
+    .memberShow div {
+        padding-left: 20px;
+    }
+    .memberShow .memberAvatar {
+        border: 2px solid;
+        border-radius: 2px;
+        width: 60px; 
+        height: 60px;
+    }
+    .memberShow .memberInfo {
+        margin-left: 20px;
+        margin-right: 20px;
+        font-size: 15px; 
+        text-align: left;
+    }
+    .memberShow .check {
+        scale: 2;
+    }
+    .memberList {
+        border: 2px solid;
+        display: flex;
+        flex-direction: column;
+        background-color: white;
+        margin-bottom: 10px;
+        width: 400px;
+        height: auto;
+        max-height: 400px;
+        overflow-y: auto;
+    }
+    .searchBox {
+        border: 1px solid;
+        border-radius: 3px;
+    }
+    .label {
+        margin-bottom: 0px;
+    }
+    .highline {
+        background-color: aliceblue;
+        border: 1px saddlebrown;
+        border-radius: 3px;
+        margin-top: 2px;
+        padding-left: 3px;
+        padding-right: 3px;
+    }
+</style>
+<script>
+    var groupID = '{{groupID}}';
+    var token = '{{token}}';
+    const selectPos = document.querySelectorAll(".selectPos")
+    const wsEndpoint = `ws://${window.location.host}/ws/participantHandel/{{groupID}}/{{partID}}`;
+    const socket = new WebSocket(wsEndpoint);
+
+    socket.addEventListener('message', function(event) {
+        let data = JSON.parse(event.data);
+        if (data['type'] == 'respone') {
+            alert(data['content']);
+            window.location.reload();
+        }
+    });
+
+    function addParticipant(memberID) {
+        let answer = confirm("Bạn có chắc chắn muốn thêm người này vào nhóm?");
+            if (answer) {
+                socket.send(JSON.stringify({
+                    "type":"add",
+                    "memberID":memberID,
+                    "groupID":groupID,
+                }))
+            }
+    }
+
+    function removeParticipant(partID) {
+        let answer = confirm("Bạn có chắc chắn muốn loại người này ra khỏi nhóm?");
+            if (answer) {
+                socket.send(JSON.stringify({
+                    "type":"remove",
+                    "partID":partID,
+                    "groupID":groupID,
+                }))
+            }
+    }
+
+    selectPos.forEach(s => {
+        s.addEventListener('change', (event) => {
+            let id = event.target.getAttribute("data-ID")
+            let name = event.target.getAttribute("data-userName")
+            let optionSelected = event.target.options[event.target.selectedIndex];
+            let value = optionSelected.value
+            let text = optionSelected.text
+            let answer = confirm(`Đặt ${name} làm ${text}?`)
+            if (answer) {
+                socket.send(JSON.stringify({
+                    "type":"update",
+                    "partID":id,
+                    "newPos":value,
+                    "groupID":groupID,
+                }))
+            } else {
+                window.location.reload();
+            }
+        });
+    });
+</script>
+{% endblock %}

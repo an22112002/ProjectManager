@@ -1,0 +1,68 @@
+header {
+    display: flex;
+    width: 100%;
+    height: 50px;
+    background-color: dodgerblue;
+}
+.hidden {
+    display: none;
+}
+.errorlist {
+    background-color: red;
+    border: 1px solid;
+    list-style: none;
+}
+.intro {
+    margin-top: 10px;
+    margin-left: 40px;
+}
+.option {
+    margin-top: 10px;
+    margin-left: auto;
+    margin-right: 40px;
+}
+.optionBtn {
+    text-decoration: none !important;
+    color: inherit !important;
+    margin-left: 5px !important;
+    margin-right: 5px !important;
+}
+.optionBtn:hover {
+    color: white !important;
+    cursor: pointer;
+}
+.btn{
+    background-color: aqua;
+    margin: 10px 10px 10px 10px;
+    padding: 5px 5px 5px 5px;
+    border-radius: 5px;
+    border: 1px solid;
+}
+.btn:hover{
+    background-color:blanchedalmond;
+    color:coral;
+    font-size: 26px;
+    transition: 0.3s;
+}
+.my-form {
+    margin: 10px 20% 10px 20%;
+    padding: 10px 10% 10px 10%;
+    background-color: antiquewhite;
+    border: 2px solid;
+    border-radius: 8px;
+    align-items: center;
+}
+.my-form p {
+    display: flex;
+    flex-direction: column;
+}
+.form-button {
+    margin: 0px auto 10px auto;
+    background-color: aqua;
+}
+.my-textarea {
+    resize: none;
+}
+.form-button:hover {
+    background-color: aquamarine;
+}

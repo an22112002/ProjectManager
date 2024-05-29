@@ -1,0 +1,125 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hỗ trợ</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+<body>
+    {% if mess %}
+    <script>
+        alert("{{ mess }}");
+    </script>
+    {% endif %}
+    <header>
+        <div class="intro">Đây là trang hỗ trợ người dùng</div>
+        <div class="option" id="options"></div>
+    </header>
+    <script>var position="{{position}}";var supportID="{{supportID}}";</script>
+    <div style="padding: 10px 250px 10px 250px;">
+        <div style="height: 500px;background-color: aqua;border-radius: 20px;border: 4px solid;padding: 20px 20px 20px 20px;">
+            <div style="background-color: white;height: 500px;display: flex;flex-direction: column-reverse;overflow-y: auto;border-radius: 5px" id="messageBox">
+                <!--Chứa tin nhắn-->
+
+                {% for m in messages %}
+                    {% if m.Reply %}
+                    <div class="adminMess">
+                        <strong>Admin</strong>
+                        <div>{{m.Content}}</div>
+                        <div class="time">{{m.SendDate}}</div>
+                    </div>
+                    {% else %}
+                    <div class="yourMess">
+                        <strong>Client</strong>
+                        <div>{{m.Content}}</div>
+                        <div class="time">{{m.SendDate}}</div>
+                    </div>
+                    {% endif %}
+                {% endfor %}
+
+            </div>
+        </div>
+        <div style="display: flex;">
+            <textarea class="chatInput" id="inputText"></textarea>
+            <button class="chatBoxBtn" onclick="sendMess()" >Gửi</button>
+        </div>
+    </div>
+    <style>
+        .adminMess {
+            margin: 5px auto 5px 5px;
+            background-color: aquamarine;
+            border-radius: 5px;
+            padding: 5px 10px 5px 10px;
+        }
+        .yourMess {
+            margin: 5px 5px 5px auto;
+            background-color:khaki;
+            border-radius: 5px;
+            padding: 5px 10px 5px 10px;
+        }
+        .time {
+            font-size: small;
+            color: gray;
+        }
+        .chatInput {
+            background-color:white;
+            border-radius: 5px;
+            margin: 20px 10px;
+            width: 100%;
+            height: 20px;
+            resize: none;
+            font-size: 15px;
+            padding: 5px;
+            border: 1px solid #000000;
+        }
+        .chatBoxBtn {
+            background-color: darkkhaki;
+            border-radius: 3px;
+            margin: 20px 10px;
+            width: 100px;
+            height: 30px;
+            font-size: 15px;
+            padding: 5px;
+            border: 1px solid #000000;
+        }
+        .chatBoxBtn:hover {
+            background-color: yellowgreen;
+        }
+    </style>
+    <script>
+        var messageBox = document.getElementById("messageBox");
+        var inputText = document.getElementById("inputText");
+        const wsEndpoint = `ws://${window.location.host}/ws/supportHandel/{{supportID}}`;
+        const socket = new WebSocket(wsEndpoint);
+    
+        socket.addEventListener("message", function(event) {
+            data = JSON.parse(event.data);
+            if (data['data']) {
+                if (data['data']['reply'] == true) {
+                    newContent = '<div class="adminMess"><strong>Admin</strong><div>'+data['data']['content']+'</div><div class="time">'+data['data']['time']+'</div></div>';
+                    messageBox.insertAdjacentHTML("afterbegin", newContent);
+                } else {
+                    newContent = '<div class="yourMess"><strong>Client</strong><div>'+data['data']['content']+'</div><div class="time">'+data['data']['time']+'</div></div>';
+                    messageBox.insertAdjacentHTML("afterbegin", newContent);
+                }
+            }
+        })
+        function sendMess() {
+            let input = inputText.value.trim();
+            if (input=="") {
+                return;
+            } else {
+                socket.send(
+                    JSON.stringify({
+                        'type': 'message',
+                        'content': input,
+                        'sender': position
+                    })
+                )
+            }
+            inputText.value = ""
+        }
+    </script>
+</body>
+</html>

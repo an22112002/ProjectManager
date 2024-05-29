@@ -1,0 +1,61 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Đăng nhập</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+<body>
+    {% if mess %}
+    <script>
+        alert("{{ mess }}");
+    </script>
+    {% endif %}
+    <header>
+        <div class="intro">Đăng nhập</div>
+        <div class="option" id="options"><a href="/main/signup" class="optionBtn">Đăng ký</a></div>
+        <script src="/static/js/useCookie.js"></script>
+    <script>
+        var support = getCookie("support");
+        if(support!=null) {
+            var link = document.createElement("a");
+            link.href = `support/c/${support}`;
+            link.textContent = "Hỗ trợ";
+            link.classList.add("optionBtn");
+            document.getElementById("options").appendChild(link);
+        }
+    </script>
+    </header>
+    <div>
+        <form class="login-form" method="post">
+            {%csrf_token%}
+            {{form.as_p}}
+            <button class="form-button" type="submit">Đăng nhập</button>
+        </form>
+    </div>
+    <script>
+        let name = getCookie("username");
+        if(name!=null) {
+            let inputName = document.getElementById("id_username");
+            inputName.value = name;
+        }
+    </script>
+    <style>
+        .login-form {
+            background-color: blanchedalmond;
+            margin: 20px 20% 20px 20%;
+            border: 2px solid;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .login-form p {
+            padding-left: 30%;
+            display: flex;
+        }
+        .login-form p label {
+            width: 100px;
+        }
+    </style>
+</body>
+</html>

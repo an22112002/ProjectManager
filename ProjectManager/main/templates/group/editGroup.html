@@ -1,0 +1,16 @@
+{% extends "basic.html" %}
+{% block title %}Chỉnh sửa tài khoản{% endblock %}
+{% block intro %}Thay đổi thông tin người dùng{% endblock %}
+{% block option %}<a class="optionBtn" href="/group/editMemberGroup/{{groupID}}?token={{token}}">Thành viên nhóm</a><a class="optionBtn" href="/group/homepage?token={{token}}">Quay lại</a>{% endblock %}
+{% block content %}
+<form class="my-form" method="post">
+    {%csrf_token%}
+    {{form.as_p}}
+    <button class="form-button" type="submit">Lưu thay đổi</button>
+</form>
+<style>
+    body {
+        font-size: 18px;
+    }
+</style>
+{% endblock %}

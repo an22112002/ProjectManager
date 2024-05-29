@@ -1,0 +1,87 @@
+{% extends "basic.html" %}
+{% block title %}Tiến độ thực hiện{% endblock %}
+{% block intro %}Tiến độ thực hiện{% endblock %}
+{% block option %}<a class="optionBtn" href="homepage?token={{token}}">Quay lại</a>{% endblock %}
+{% block content %}
+<form class="my-form" style="text-align: center;align-items: center;display: flex;flex-direction: column;">
+    <p>Tiến độ hiện tại</p>
+    <div style="width: 100%;max-height: 400px;height: auto;overflow-y:auto;">
+        <table style="background-color: aliceblue;width: 100%;height: auto;padding: 10px 5px 10px 5px;border: 1px solid;border-collapse: collapse;">
+            <thead style="background-color: brown;">
+                <tr>
+                    <td style="width: 34%;">Công việc</td>
+                    <td style="width: 33%;">Tiến độ thực hiện</td>
+                    <td style="width: 33%;">Trạng thái</td>
+                </tr>
+            </thead>
+            {% for p in progress %}
+            <tr>
+                <td>{% if p.Type == "Phase" %}<strong>{{p.Name}}</strong>{% else %}{{p.Name}}{% endif %}</td>
+                <td>{{p.Progress}}%</td>
+                <td>{{p.Status}}</td>
+            </tr>
+            {% endfor %}
+        </table>
+    </div>
+    <p>Ngân sách</p>
+    <div style="width: 100%;max-height: 400px;height: auto;overflow-y:auto;">
+        <table style="background-color: aliceblue;width: 100%;height: auto;padding: 10px 5px 10px 5px;border: 1px solid;border-collapse: collapse;">
+            <tr>
+                <td style="width: 50%;background-color: brown;">Ngân sách dự án</td>
+                <td style="width: 50%;">{{budget}}</td>
+            </tr>
+            <tr>
+                <td style="width: 50%;background-color: brown;">Sử dụng</td>
+                <td style="width: 50%;">{{budgetUsed}}</td>
+            </tr>
+            <tr>
+                <td style="width: 50%;background-color: brown;">Còn lại</td>
+                <td style="width: 50%;">{{budgetNotUse}}</td>
+            </tr>
+        </table>
+    </div>
+    <p>Danh sách báo cáo dự án</p>
+    {% if lenRepost > 0 %}
+    <div class="repostList">
+        {% for r in reposts %}
+        <a href="/project/readProjectRepost/{{r.id}}?token={{token}}" class="optionBtn"><div class="repostShow">Báo cáo ngày: {{r.date}}</div></a>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p>Không có báo cáo</p>
+    {% endif %}
+</form>
+<style>
+    body {
+        font-size: 18px;
+    }
+    td {
+        border: 1px solid;
+    }
+    .repostShow {
+        background-color: darkgray;
+        font-size: 14px;
+        margin-top: 5px;
+        padding-top: 5px;
+        width: 100%;
+        height: 30px;
+    }
+    .repostList {
+        border: 2px solid;
+        display: flex;
+        flex-direction: column;
+        background-color: white;
+        margin-bottom: 10px;
+        width: 250px;
+        height: auto;
+        max-height: 400px;
+        overflow-y: auto;
+    }
+</style>
+<script>
+    var p = document.getElementById("showProgress")
+    document.getElementById("progress").addEventListener('change', function(event) {
+        p.textContent = event.target.value+"%"
+    })
+</script>
+{% endblock %}

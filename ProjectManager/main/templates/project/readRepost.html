@@ -1,0 +1,30 @@
+{% extends "basic.html" %}
+{% block title %}Đọc báo cáo{% endblock %}
+{% block intro %}Báo cáo{% endblock %}
+{% block option %}{% endblock %}
+{% block content %}
+<p style="width: 100%;text-align: center;font-size: 30px;">Báo cáo</p>
+<form class="my-form">
+    {{form.as_p}}
+    {% if allowDel == True %}
+    <style>
+        .delBtn {
+            background-color:red
+        }
+        .delBtn:hover {
+            background-color:brown
+        }
+    </style>
+    <button class="delBtn" onclick="deleteRepost('{{type}}', '{{ID}}', '{{token}}')" type="button">Xóa báo cáo</button>
+    <script>
+        console.log("{{allowDel}}")
+        function deleteRepost(type, ID, token) {
+            let v = confirm("Bạn có chắc muốn xóa báo cáo này?")
+            if (v) {
+                window.location.href = `/project/deleteRepost/${type}/${ID}/${token}`;
+            }
+        }
+    </script>
+    {% endif %}
+</form>
+{% endblock %}

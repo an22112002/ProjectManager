@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video call</title>
+</head>
+<body>
+    <div class="videos" id="videos">
+        <!--Videos-->
+
+    </div>
+    <div class="overlay1">
+        <button class="btn" onclick="controlCamera()" id="btnCamera">Tắt hình ảnh</button>
+        <button class="btn" onclick="controlAudio()" id="btnAudio">Tắt âm thanh</button>
+        <button class="btn" onclick="stopCall()">Rời đi</button>
+    </div>
+</body>
+</html>
+<style>
+    body {
+        background-color: rgb(43, 43, 43);
+    }
+    .hidden {
+        display: none;
+    }
+    .btn {
+        border: 2px gray;
+        border-radius: 10px;
+        color: black;
+        background-color: chocolate;
+    }
+    .btn:hover {
+        color: white;
+        background-color: goldenrod;
+    }
+    .videos {
+        margin-top: 20px;
+        margin-bottom: 40px;
+        padding-bottom: 240px;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        width: 100%;
+        height: 100px;
+    }
+    .video-contain {
+        margin: 3px 3px 3px 3px;
+        width: 19%;
+    }
+    .video-label {
+        background-color: rgba(255, 255, 255, 0.7);
+        width: auto;
+        border-radius: 5px;
+        padding-left: 5px;
+        margin-bottom: 0px;
+    }
+    .video {
+        background-color: black;
+        width: 100%;
+        height: 160px;
+        border: 1px solid;
+    }
+    .avatar {
+        background-color: white;
+        width: 100%;
+        height: 160px;
+        border: 1px solid;
+    }
+    .overlay1 {
+        position: fixed;
+        padding: 10px 10px 10px 10px;
+        bottom: 8%;
+        right: 20%;
+        left: 20%;
+        width: 60%;
+        height: 50px;
+        background-color: rgba(43, 13, 83, 0.9);
+        border: 4px solid white;
+        border-radius: 8px;
+        z-index: 999;
+        text-align: center;
+    }
+</style>
+<script>
+
+    var memberID = '{{memberID}}'
+
+    var localStream;
+    var displayStream;
+    var countIce = 0;
+    var userID = [];
+    var locate_userID = null;
+    var onCamera = true;
+    var onAudio = true;
+    var audio;
+
+    var numberScr = 1
+    var peerConnects = {}
+    var remoteStreams = {}
+    var memberNames = {}
+    var memberAvatars = {}
+    var unShow = []
+    var videoList = document.getElementById("videos")
+
+    const servers = {
+        iceServers:[
+            {
+                urls:['stun:stun1.l.google.com:19302', 'stun:stun2.l.google.com:19302']
+            }
+        ]
+    }
+
+    const wsEndpoint = `ws://${window.location.host}/ws/videoCallHandel/{{type}}/{{id}}/{{memberID}}`;
+    const socket = new WebSocket(wsEndpoint);
+
+    socket.onclose = function(event) {
+        window.location.href = "/project/homepage?token={{token}}";
+    }
+
+    socket.addEventListener('message', function(event) {
+        let data = JSON.parse(event.data);
+        if (data['type'] == 'order') {
+            if (data["order"] == 'allOut') {
+                socket.close()
+                window.location.href = "/project/homepage?token={{token}}";
+            }
+            if (data["order"] == 'ready') {
+                console.log("Đã sắn sàng")
+                setupMaster()
+            }
+            if (data["order"] == "memberOut") {
+                console.log("Có thành viên rời đi")
+                removeMember(data["memberID"])
+            }
+        }
+        if (data["type"] == 'noCall') {
+            alert("Không có cuộc họp nào đang diễn ra")
+            socket.close()
+            window.location.href = "/project/homepage?token={{token}}";
+        }
+        if (data["type"] == 'getUserID') {
+            console.log("Đã sắn sàng")
+            setupCaller(data)
+        }
+        if (data["type"] == 'stopWatch') {
+            let x = true
+            for (let i=0; i<unShow.length; i++) {
+                if (unShow[i] == data["memberID"]) {
+                    x = false;
+                    break;
+                }
+            }
+            if (x) {unShow.push(data["memberID"])}
+            updateVideo();
+        }
+        if (data["type"] == 'reWatch') {
+            for (let i=0; i<unShow.length; i++) {
+                if (unShow[i] == data["memberID"]) {
+                    unShow.splice(i, 1);
+                    i--;
+                }
+            }
+            updateVideo();
+        }
+        if (data["type"] == 'offer') {
+            if (data["callee"] == memberID) {
+                if (peerConnects.hasOwnProperty(data["caller"])) {
+                    delete peerConnects[data["caller"]]
+                }
+                data['offer'] = new RTCSessionDescription(data['offer']);
+                getNewConnect(data)
+            }
+        }
+        if (data["type"] == 'answer') {
+            if (data["caller"] == memberID) {
+                data['answer'] = new RTCSessionDescription(data['answer']);
+                setAnswer(data)
+            }
+        }
+        if (data["type"] == 'ice') {
+            if (data["receiver"] == memberID) {
+                data["ice"] = new RTCIceCandidate(data["ice"])
+                addNewIceCandidates(data)
+            }
+        }
+    })
+
+    async function setupMaster() {
+        localStream = await setupMedia()
+    }
+
+    async function setupCaller(data) {
+        localStream = await setupMedia()
+        userID = await data["userIDs"]
+        locate_userID = 0
+        let remoteStream = await makeRemoteStream()
+        await createCallerPeerConnection(userID[locate_userID], remoteStream)
+    }
+
+    async function getNewConnect(data) {
+        let remoteStream = null;
+        if (remoteStreams.hasOwnProperty(data["caller"])) {
+            remoteStream = await remoteStreams[data["caller"]]
+            await remoteStream.getTracks().forEach(track => {
+                remoteStream.removeTrack(track);
+            });
+        } else {
+            remoteStream = await makeRemoteStream()
+        }
+        await createCalleePeerConnection(data["caller"], remoteStream, data["offer"], data["callerName"], data["callerAvatar"])
+    }
+
+    async function setAnswer(data) {
+        await peerConnects[data["callee"]].setRemoteDescription(data['answer'])
+        memberNames[data["callee"]] = await data["calleeName"]
+        memberAvatars[data["callee"]] = await data["calleeAvatar"]
+        if (data["camera"] == false) {await unShow.push(data["callee"]);}
+
+        if (locate_userID + 1 < userID.length) {
+            locate_userID += await 1
+            let remoteStream = await makeRemoteStream()
+            await createCallerPeerConnection(userID[locate_userID], remoteStream)
+        } else {
+            await updateVideo()
+        }
+    }
+    async function updateVideo() {
+        document.getElementById('user-1').srcObject = await localStream
+        let keys = await Object.keys(remoteStreams)
+        let i = await 2
+        
+        await keys.forEach(key => {
+            onScreen(key)
+            document.getElementById(`label-${i}`).innerText = memberNames[key]
+            document.getElementById(`user-${i}`).srcObject = remoteStreams[key]
+            document.getElementById(`avatar-${i}`).src = memberAvatars[key]
+            i++;
+        });
+
+        if (await unShow) {
+            for(let i=0; i<unShow.length; i++) {
+                await offScreen(unShow[i])
+            }
+        }
+    }
+
+    async function makeScr() {
+        if (numberScr == 1)
+            videoList.innerHTML += await `<div class="video-contain" id="contain-${numberScr}"><div class="video-label" id="label-${numberScr}">Bạn</div><video style="border: 3px white;" class="video" id="user-${numberScr}" autoplay playinline></video></div>`
+        else {
+            videoList.innerHTML += await `<div class="video-contain" id="contain-${numberScr}"><div class="video-label" id="label-${numberScr}">Name</div><video style="border: 3px aquamarine;" class="video" id="user-${numberScr}" autoplay playinline></video><img class="hidden" id="avatar-${numberScr}" ></div>`
+        }
+        numberScr += await 1
+    }
+    async function setupMedia() {
+        await makeScr();
+        let stream = await navigator.mediaDevices.getUserMedia({ video: onCamera, audio:{echoCancellation: true} });
+        document.getElementById('user-1').srcObject = await stream;
+        return stream
+    }
+    async function makeRemoteStream() {
+        await makeScr();
+        var remoteStream = await new MediaStream()
+        document.getElementById(`user-${numberScr-1}`).srcObject = await remoteStream;
+        return remoteStream
+    }
+    async function createCallerPeerConnection(calleeID, remoteStream) {
+        let peerConnection = await new RTCPeerConnection(servers);
+        await localStream.getTracks().forEach(track=>{
+            peerConnection.addTrack(track,localStream);
+        })
+
+        peerConnection.addEventListener('track',e=>{
+            e.streams[0].getTracks().forEach(track=>{
+                remoteStream.addTrack(track, remoteStream);
+            })
+        })
+
+        peerConnection.addEventListener('icecandidate', e=>{
+            if(e.candidate){
+                // gửi đến server
+                socket.send(
+                    JSON.stringify({
+                        'type' : 'ice',
+                        'icecandidate': e.candidate,
+                        'sender': 'caller',
+                        'caller': memberID,
+                        'callee': calleeID
+                    })
+                )
+            }
+        })
+
+        let offer = await peerConnection.createOffer();
+        await peerConnection.setLocalDescription(offer);
+        await sendOffer(memberID, calleeID, offer)
+
+        peerConnects[calleeID] = await peerConnection
+        remoteStreams[calleeID] = await remoteStream
+    }
+    async function createCalleePeerConnection(callerID, remoteStream, offer, name, avatar) {
+        peerConnection = await new RTCPeerConnection(servers);
+        await localStream.getTracks().forEach(track=>{
+            peerConnection.addTrack(track,localStream);
+        })
+
+        peerConnection.addEventListener('track',e=>{
+            e.streams[0].getTracks().forEach(track=>{
+                remoteStream.addTrack(track, remoteStream);
+            })
+        })
+
+        peerConnection.addEventListener('icecandidate', e=>{
+            if(e.candidate){
+                // gửi đến server
+                socket.send(
+                    JSON.stringify({
+                        'type' : 'ice',
+                        'icecandidate': e.candidate,
+                        'sender': 'callee',
+                        'caller': callerID,
+                        'callee': memberID
+                    })
+                )
+            }
+        })
+
+        await peerConnection.setRemoteDescription(offer)
+        answer = await peerConnection.createAnswer();
+        await peerConnection.setLocalDescription(answer);
+        await sendAnswer(callerID, memberID, answer)
+
+        peerConnects[callerID] = await peerConnection
+        remoteStreams[callerID] = await remoteStream
+        memberNames[callerID] = await name
+        memberAvatars[callerID] = await avatar
+        
+        await updateVideo();
+    }
+    async function sendOffer(caller, callee, offer) {
+        await socket.send(
+            JSON.stringify({
+                'type' : 'offer',
+                'caller': caller,
+                'callee': callee,
+                'offer': offer
+            })
+        )
+    }
+    async function sendAnswer(caller, callee, answer) {
+        await socket.send(
+            JSON.stringify({
+                'type' : 'answer',
+                'caller': caller,
+                'callee': callee,
+                'answer': answer,
+                'camera': onCamera
+            })
+        )
+    }
+    async function addNewIceCandidates(data) {
+        try {
+            peerConnects[data["sender"]].addIceCandidate(data["ice"]);
+        } catch {}
+    }
+    async function updateMember(memberID) {
+        let peer = await peerConnects[memberID]
+        let remoteStream = await remoteStreams[memberID]
+        peer.getSenders().forEach(sender => {
+            peer.removeTrack(sender);
+        });
+
+        remoteStream.getTracks().forEach(track => {
+            peer.addTrack(track, remoteStream);
+        });
+
+        peerConnects[memberID] = await peer
+        remoteStreams[memberID] = await remoteStream
+        await updateVideo();
+    }
+    async function controlCamera() {
+        if (onCamera) {
+            if (localStream) {
+                onCamera = false;
+                let videoTracks = await localStream.getVideoTracks();
+                videoTracks.forEach(track => {
+                    track.stop();
+                });
+                await socket.send(
+                    JSON.stringify({
+                        'type' : 'order',
+                        'order': 'stopWatch',
+                        'myID': memberID
+                    })
+                )
+                document.getElementById("btnCamera").innerText = await "Bật hình ảnh"
+            }
+        } else {
+            onCamera = true;
+            if (onAudio) {
+                audio = {echoCancellation: true}
+            } else {
+                audio = false
+            }
+            localStream = await navigator.mediaDevices.getUserMedia({ video: onCamera, audio: audio });
+            document.getElementById('user-1').srcObject = localStream;
+
+            let peers = Object.values(peerConnects)
+            peers.forEach(peer => {
+                localStream.getTracks().forEach(track=>{
+                    peer.addTrack(track,localStream);
+                })
+            });
+            await socket.send(
+                JSON.stringify({
+                    'type' : 'order',
+                    'order': 'reWatch',
+                    'myID': memberID
+                })
+            )
+            await resetConnect()
+            document.getElementById("btnCamera").innerText = await "Tắt hình ảnh"
+        }
+    }
+    async function controlAudio() {
+        if (onAudio) {
+            if (localStream) {
+                onAudio = false;
+                let audioTracks = await localStream.getAudioTracks();
+                audioTracks.forEach(track => {
+                    track.stop();
+                });
+                document.getElementById("btnAudio").innerText = await "Bật âm thanh"
+            }
+        } else {
+            onAudio = true;
+            localStream = await navigator.mediaDevices.getUserMedia({ video: onCamera, audio: {echoCancellation: true} });
+            document.getElementById('user-1').srcObject = localStream;
+
+            let peers = Object.values(peerConnects)
+            peers.forEach(peer => {
+                localStream.getTracks().forEach(track=>{
+                    peer.addTrack(track,localStream);
+                })
+            });
+            await resetConnect()
+            document.getElementById("btnAudio").innerText = await "Tắt âm thanh"
+        }
+    }
+    function resetConnect() {
+        let conn = Object.keys(peerConnects)
+        conn.forEach(memberID => {
+            let remoteStream = remoteStreams[memberID]
+            remoteStream.getTracks().forEach(track => {
+                remoteStream.removeTrack(track);
+            });
+            createCallerPeerConnection(memberID, remoteStream)
+        });
+    }
+    function stopCall() {
+        if (confirm("Bạn có chắc muốn rời đi?")) {
+            socket.close()
+            window.location.href = "/project/homepage?token={{token}}";
+        }
+    }
+    function removeMember(memberID) {
+        delete remoteStreams[memberID]
+        delete peerConnects[memberID]
+        numberScr -= 1
+        let video = document.getElementById(`user-${numberScr}`)
+        let label = document.getElementById(`label-${numberScr}`)
+        let contain = document.getElementById(`contain-${numberScr}`)
+        let avatar = document.getElementById(`avatar-${numberScr}`)
+        video.parentNode.removeChild(video);
+        label.parentNode.removeChild(label);
+        contain.parentNode.removeChild(contain);
+        avatar.parentNode.removeChild(avatar);
+        updateVideo()
+    }
+    function offScreen(memberID) {
+        let rs = remoteStreams[memberID]
+        for (let i=2; i<numberScr; i++) {
+            if (document.getElementById(`user-${i}`).srcObject == rs) {
+                document.getElementById(`user-${i}`).srcObject = null;
+                document.getElementById(`user-${i}`).classList.remove("video")
+                document.getElementById(`user-${i}`).classList.add("hidden")
+                document.getElementById(`avatar-${i}`).classList.add("avatar")
+                document.getElementById(`avatar-${i}`).classList.remove("hidden")
+                break;
+            }
+        }
+    }
+    function onScreen(memberID) {
+        let name = memberNames[memberID]
+        for (let i=2; i<numberScr; i++) {
+            if (document.getElementById(`label-${i}`).innerText == name) {
+                document.getElementById(`user-${i}`).classList.remove("hidden")
+                document.getElementById(`user-${i}`).classList.add("video")
+                document.getElementById(`avatar-${i}`).classList.add("hidden")
+                document.getElementById(`avatar-${i}`).classList.remove("avatar")
+                break;
+            }
+        }
+    }
+    function final() {
+        console.log("final------------------------")
+        console.log(peerConnects);
+        console.log(localStream)
+        console.log(remoteStreams)
+        console.log(unShow)
+    }
+</script>
+{% if userID %}
+    <script src="/static/js/onlineChecker.js"></script>
+    <script>
+        activateOnlineWebSocket('{{userID}}')
+    </script>
+{% endif %}

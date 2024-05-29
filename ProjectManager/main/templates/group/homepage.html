@@ -1,0 +1,350 @@
+{% extends "basic.html" %}
+{% block title %}Trang chủ nhóm{% endblock %}
+{% block intro %}Trang chủ nhóm{% endblock %}
+{% block option %}{% if isManager == True %}<a class="optionBtn" href="createGroup?token={{token}}">Tạo nhóm</a>{% endif %}<a class="optionBtn" href="backProject?token={{token}}">Quay lại</a>{% endblock %}
+{% block content %}
+<div id="context-menu" class="context-menu">
+    <button id="delete-button">Xóa</button>
+</div>
+<div style="width: 100%;height: 100%;display: flex;">
+    <div class="groupListBox">
+        <ul class="groupList">
+            {% for group in groupList %}
+            <li class="optionBtn" onclick="accessGroup('{{memberID}}','{{group.groupID}}', '{{group.participantID}}')">{{group.GroupName}}</li>
+            <hr>
+            {% endfor %}
+        </ul>
+    </div>
+    <div style="padding-top: 20px; width: 60%">
+        <div style="height: 500px;background-color: aqua;border-radius: 20px;border: 4px solid;padding: 20px 20px 20px 20px;">
+            <div style="background-color: white;height: 500px;display: flex;flex-direction: column-reverse;overflow-y: auto;border-radius: 5px" id="messageBox">
+                <!--Chứa tin nhắn-->
+            </div>
+        </div>
+        <div style="display: flex;">
+            <textarea class="chatInput" id="inputText"></textarea>
+            <button class="chatBoxBtn" onclick="sendMess()">Gửi</button>
+        </div>
+    </div>
+    <div>
+        <div class="hidden" id="partBox"></div>
+        <div class="hidden" id="optionBox"></div>
+    </div>
+</div>
+<style>
+    .hidden {
+        display: none;
+    }
+    .groupListBox {
+        width: 20%;
+        height: auto;
+        max-height: 400px;
+        overflow-y: auto;
+        background-color: gray;
+        border-radius: 5px;
+        border: 2px solid;
+        margin-top: 10px;
+        margin-right: 10px;
+        padding: 10px 10px 10px 10px;
+    }
+    .groupList {
+        list-style-type: none;
+        padding-left: 10px;
+    }
+    .groupList:hover {
+        cursor: pointer;
+    }
+    .containOtherMess {
+        width: 100%;
+        display: flex;
+        flex-direction: row-reverse;
+    }
+    .otherMess {
+        max-width: 40%;
+        margin: 5px auto 5px 5px;
+        background-color: aquamarine;
+        border-radius: 5px;
+        padding: 5px 10px 5px 10px;
+    }
+    .containYourMess {
+        width: 100%;
+        display: flex;
+        flex-direction: row;
+    }
+    .mess {
+        overflow-wrap: break-word;
+    }
+    .yourMess {
+        max-width: 40%;
+        margin: 5px 5px 5px auto;
+        background-color:khaki;
+        border-radius: 5px;
+        padding: 5px 10px 5px 10px;
+        width: auto;
+    }
+    .time {
+        font-size: small;
+        color: gray;
+    }
+    .chatInput {
+        background-color:white;
+        border-radius: 5px;
+        margin: 20px 10px;
+        width: 100%;
+        height: 20px;
+        resize: none;
+        font-size: 15px;
+        padding: 5px;
+        border: 1px solid #000000;
+    }
+    .chatBoxBtn {
+        background-color: darkkhaki;
+        border-radius: 3px;
+        margin: 20px 10px;
+        width: 100px;
+        height: 30px;
+        font-size: 15px;
+        padding: 5px;
+        border: 1px solid #000000;
+    }
+    .chatBoxBtn:hover {
+        background-color: yellowgreen;
+    }
+    .optionBox {
+        background-color: cadetblue;
+        width: auto;
+        height: auto;
+        display: flex;
+        flex-direction: column;
+        border-radius: 15px;
+        border: 1px solid;
+        margin: 10px 0px 10px 20px;
+        padding: 10px 10px 10px 10px;
+    }
+    .partBox {
+        background-color: aliceblue;
+        width: auto;
+        max-height: 300px;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        border-radius: 4px;
+        border: 1px solid;
+        margin: 10px 0px 10px 20px;
+        padding: 5px 5px 5px 5px;
+    }
+    .partShow {
+        background-color: bisque;
+        width: 100%;
+        height: auto;
+        display: flex;
+        border: 1px solid;
+        border-radius: 4px;
+        margin: 5px 0px 5px 0px;
+        align-items: center;
+    }
+    img {
+        width: 30px;
+        height: 30px;
+        border-radius: 15px;
+        border: 1px solid;
+        margin-left: 5px;
+        margin-right: 5px;
+    }
+    .context-menu {
+        display: none;
+        position: absolute;
+        background-color: white;
+        border: 1px solid #ccc;
+        box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+        z-index: 1000;
+    }
+
+    .context-menu button {
+        display: block;
+        padding: 10px;
+        width: 100%;
+        border: none;
+        background: none;
+        text-align: left;
+    }
+
+    .context-menu button:hover {
+        background-color: #f0f0f0;
+    }
+</style>
+<script>
+    var token = '{{token}}'
+    var MemberID = '{{memberID}}'
+    var messageBox = document.getElementById("messageBox")
+    var optionBox = document.getElementById("optionBox")
+    var partBox = document.getElementById("partBox")
+    var inputText = document.getElementById("inputText");
+    var currentMessage = null;
+    var delMessAble = false;
+    var socket = null;
+    var position = null;
+    
+    const contextMenu = document.getElementById('context-menu');
+    const deleteButton = document.getElementById('delete-button');
+
+    function accessGroup(memberID, groupID, participantID) {
+        try {
+            socket.close();
+        } catch(e) {}
+        let EndPoint = `ws://${window.location.host}/ws/groupChatHandel/${memberID}/${groupID}/${participantID}`;
+        socket = new WebSocket(EndPoint)
+        socket.addEventListener('message', function(event) {
+            let data = JSON.parse(event.data);
+            if (data["type"] == "allMessage") {
+                setupGroupDisplay(data)
+            }
+            if (data["type"] == "responeDel") {
+                alert(data["content"])
+                location.reload(true)
+            }
+            if (data["type"] == "respone") {
+                alert(data["content"])
+            }
+            if (data["type"] == "delMess") {
+                let mess = document.querySelectorAll('.mess');
+                mess.forEach(m => {
+                    if (m.getAttribute("data-ID") == data["messID"]) {
+                        m.parentElement.parentElement.remove();
+                    }
+                });
+            }
+            if (data["type"] == "participant") {
+                console.log(data["participant"])
+            }
+            if (data["type"] == "message") {
+                if (MemberID==data["memberID"]) {
+                    var newContent = `<div class='containYourMess'><div class='yourMess'><strong>${data.Name}</strong><div data-ID='${data.ID}' class='mess'>${data.Content}</div><div class='time'>${data.SendDate}</div></div><img src='${data.Avatar}'></div>`
+                } else {
+                    var newContent = `<div class="containOtherMess"><div class="otherMess"><strong>${data.Name}</strong><div data-ID='${data.ID}' class='mess'>${data.Content}</div><div class="time">${data.SendDate}</div></div><img src='${data.Avatar}'></div>`
+                }
+                messageBox.insertAdjacentHTML("afterbegin", newContent);
+                updateMessEvent()
+            }
+        });
+        socket.onopen = function (e) {
+            socket.send(JSON.stringify({
+                "type":"request",
+                "request":"getAllMessage"
+            }))
+        }
+    }
+    function setupGroupDisplay(data) {
+        delMessAble = false
+        setupMessageBox(data["position"], data["messages"])
+        setupOptionBox(data["position"], data["groupID"])
+        setupPartBox(data["participants"])
+    }
+    function setupMessageBox(position, messages) {
+        messageBox.innerHTML = ""
+        messages.forEach(m => {
+            if (MemberID==m.memberID) {
+                messageBox.innerHTML += `<div class='containYourMess'><div class='yourMess'><strong>${m.Name}</strong><div data-ID='${m.ID}' class='mess'>${m.Content}</div><div class='time'>${m.SendDate}</div></div><img src='${m.Avatar}'></div>`
+            } else {
+                messageBox.innerHTML += `<div class="containOtherMess"><div class="otherMess"><strong>${m.Name}</strong><div data-ID='${m.ID}' class='mess'>${m.Content}</div><div class="time">${m.SendDate}</div></div><img src='${m.Avatar}'></div>`
+            }
+        });
+        if (position == "0") {
+            delMessAble = true
+        }
+        updateMessEvent()
+    }
+    function setupOptionBox(position, groupID) {
+        closeOptionBox();
+        optionBox.classList.remove("hidden");optionBox.classList.add("optionBox");
+        optionBox.innerHTML += `<hr style='width:100%'>`
+        if (position == "0") {
+            optionBox.innerHTML += `<a class="optionBtn" href="editGroup/${groupID}?token=${token}" id="editBtn">Cài đặt nhóm</a><hr style='width:100%'>
+            <a class="optionBtn" onclick='deleteGroup()' id="delBtn">Xóa nhóm</a><hr style='width:100%'>`
+        } else {
+            optionBox.classList.remove("optionBox");optionBox.classList.add("hidden");
+        }
+    }
+    function closeOptionBox() {
+        optionBox.classList.remove("optionBox");optionBox.classList.add("hidden");
+        optionBox.innerHTML = ""
+    }
+    function setupPartBox(participants) {
+        closePartBox();
+        partBox.classList.remove("hidden");partBox.classList.add("partBox");
+        participants.forEach(p => {
+            partBox.innerHTML += `<div class="partShow"><img src=${p.Avatar}><p>${p.Name}: ${p.Status}</p></div>`
+        });
+    }
+    function closePartBox() {
+        partBox.classList.remove("partBox");partBox.classList.add("hidden");
+        partBox.innerHTML = ""
+    }
+    function sendMess() {
+        let input = inputText.value.trim();
+        if (socket==null) {
+            alert("Chọn 1 nhóm để gửi tin")
+            return;
+        }
+        if (input=="") {
+            alert("Bạn chưa nhập gì để gửi đi")
+            return;
+        } else {
+            socket.send(
+                JSON.stringify({
+                    'type': 'message',
+                    'content': input
+                })
+            )
+        }
+        inputText.value = ""
+    }
+    function deleteGroup() {
+        socket.send(
+            JSON.stringify({
+                'type': 'request',
+                'request': 'delete',
+            })
+        )
+    }
+    function updateMessEvent() {
+        const messages = document.querySelectorAll('.mess');
+
+        messages.forEach(message => {
+            message.addEventListener('click', (e) => {
+                if (delMessAble) {
+                    e.preventDefault();
+                    currentMessage = e.target;
+                    contextMenu.style.top = `${e.pageY}px`;
+                    contextMenu.style.left = `${e.pageX}px`;
+                    contextMenu.style.display = 'block';
+                }
+            });
+        });
+
+        deleteButton.addEventListener('click', () => {
+            if (currentMessage) {
+                // code xóa
+                let v = confirm("Bạn có chắc chắn xóa tin này?")
+                if (v) {
+                    socket.send(
+                        JSON.stringify({
+                            'type': 'delMess',
+                            'messID': currentMessage.getAttribute("data-ID"),
+                        })
+                    )
+                }
+                contextMenu.style.display = 'none';
+                currentMessage = null;
+            }
+        });
+    };
+    document.addEventListener('click', (e) => {
+        e.target.classList.forEach(value => {
+            if (value != "mess") {
+                contextMenu.style.display = 'none';
+            }
+        });
+    });
+</script>
+{% endblock %}

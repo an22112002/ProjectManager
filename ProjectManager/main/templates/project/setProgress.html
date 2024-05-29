@@ -1,0 +1,82 @@
+{% extends "basic.html" %}
+{% block title %}Duyệt tiến độ{% endblock %}
+{% block intro %}Duyệt tiến độ{% endblock %}
+{% block option %}<a class="optionBtn" href="/project/schedule?token={{token}}">Quay lại</a>{% endblock %}
+{% block content %}
+<form class="my-form" style="text-align: center;align-items: center;display: flex;flex-direction: column;" method="post">
+    {%csrf_token%}
+    <div style="background-color: beige;border: 1px solid;border-radius: 10px;padding: auto 10px auto 10px;display: flex;flex-direction: column;">
+        <p>Tiến độ hoàn thành</p>
+        <p id="showProgress" style="font-size: 30px;border: 2px solid;border-radius: 15px;padding: 5px 5px 5px 5px; margin: auto;">{{progress}}%</p>
+        <br>
+        {% if editable == True %}
+        <input id="progress" type="range" min="0" max="100" value="{{progress}}" class="slider" name="progress">
+        <br>
+        {{ form.as_p }}
+        <button class="form-button" type="submit">Lưu</button>
+        {% endif %}
+    </div>
+    <p>Danh sách báo cáo thực hiện</p>
+    {% if lenReposts > 0 %}
+    <div class="repostList">
+        {% for repost in reposts %}
+        <a href="/project/readRepost/{{repost.repostID}}?token={{token}}" class="optionBtn"><div class="repostShow">
+            Báo cáo ngày: {{repost.DateRepost}}
+        </div></a>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p>Không có báo cáo nào</p>
+    {% endif %}
+    <hr>
+    <p>Danh sách báo cáo kiểm tra</p>
+    {% if lenChecks > 0 %}
+    <div class="repostList">
+        {% for check in checks %}
+        <a href="/project/readCheck/{{check.checkID}}?token={{token}}" class="optionBtn"><div class="repostShow">
+            Báo cáo ngày: {{check.DateCheck}}
+        </div></a>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p>Không có biên bản kiểm tra</p>
+    {% endif %}
+</form>
+<style>
+    body {
+        font-size: 18px;
+    }
+    .repostShow {
+        background-color: darkgray;
+        font-size: 14px;
+        margin-top: 5px;
+        padding-top: 10px;
+        width: 100%;
+        height: 40px;
+    }
+    .repostList {
+        border: 2px solid;
+        display: flex;
+        flex-direction: column;
+        background-color: white;
+        margin-bottom: 10px;
+        width: 250px;
+        height: auto;
+        max-height: 400px;
+        overflow-y: auto;
+    }
+    .slider {
+        width: 300px;
+        align-self: center;
+    }
+    .my-textarea {
+        margin: 10px 10px 10px 10px;
+    }
+</style>
+<script>
+    var p = document.getElementById("showProgress")
+    document.getElementById("progress").addEventListener('change', function(event) {
+        p.textContent = event.target.value+"%"
+    })
+</script>
+{% endblock %}

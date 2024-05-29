@@ -1,0 +1,174 @@
+{% extends "basic.html" %}
+{% block title %}Trang chủ{% endblock %}
+{% block intro %}Trang chủ dự án{% endblock %}
+{% block option %}<a class="optionBtn" href="backMain?token={{token}}">Quay lại</a>{% endblock %}
+{% block content %}
+<div style="display: flex;margin: 20px 0px 20px 0px;">
+    <div>
+        <div style="width: 300px;background-color: cyan;border:2px solid;padding: 10px 10px 10px 10px;">
+            <div>Dự án: {{project.NameProject}}</div>
+            <div>Ngân sách: {{project.Budget}}</div>
+            <div style="white-space: normal;">Mục tiêu: {{project.Description}}</div>
+        </div>
+        {% if isManager == True %}
+        <div style="padding-top: 20px;">
+            <a class="btn" href="editProject?token={{token}}">Chỉnh sửa thông tin dự án</a>
+        </div>
+            {% if canFinish == True %}
+                {% if allAgree == True %}
+                    <div style="padding-top: 20px;">
+                        <a class="btn" href="finishProject?token={{token}}">Kết thúc dự án</a>
+                    </div>
+                {% endif %}
+            {% endif %}
+        {% endif %}
+
+
+        {% if isClient == True %}
+            {% if canFinish == True %}
+                {% if clientAgree == False %}
+                    <div style="padding-top: 20px;">
+                        <a class="btn" href="setAllowFinish/T/{{token}}">Đồng ý kết thúc dự án</a>
+                    </div>
+                {% else %}
+                    <div style="padding-top: 20px;">
+                        <a class="btn" href="setAllowFinish/F/{{token}}">Từ chối kết thúc dự án</a>
+                    </div>
+                {% endif %}
+            {% endif %}
+        {% else %}
+        <div class="taskArray">
+            <p>Nhiệm vụ chưa hoàn thành</p>
+            {% if unfinishTasks %}
+                {% for t in unfinishTasks %}
+                <div class="task">Nhiệm vụ: {{t.NameTask}} - Tình trạng: {{t.Status}}</div>
+                {% endfor %}
+            {% else %}
+                <p style="font-size: 15px;">Không có nhiệm vụ chưa hoàn thành</p>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+    <div style="width: 100%;display: flex;flex-wrap: wrap;">
+        <!--Danh sách các chức năng-->
+        <a href="schedule?token={{token}}">
+            <div class="projectOption">
+                <img class="imgShow" src="/static/images/scheduleIcon.jpg">
+                <strong style="text-align: center;">Lịch trình</strong>
+            </div>
+        </a>
+        <a href="editMember?token={{token}}">
+            <div class="projectOption">
+                <img class="imgShow" src="/static/images/memberIcon.jpg">
+                <strong style="text-align: center;">Nhân viên</strong>
+            </div>
+        </a>
+        {% if isManager == True %}
+        <a href="makeProjectRepost?token={{token}}">
+            <div class="projectOption">
+                <img class="imgShow" src="/static/images/repostIcon.jpg">
+                <strong style="text-align: center;">Lập báo cáo dự án</strong>
+            </div>
+        </a>
+        {% endif %}
+        <a href="showProgress?token={{token}}">
+            <div class="projectOption">
+                <img class="imgShow" src="/static/images/progressIcon.jpg">
+                <strong style="text-align: center;">Tiến độ</strong>
+            </div>
+        </a>
+        {% if isClient == False %}
+        <a href="sharingFile?token={{token}}">
+            <div class="projectOption">
+                <img class="imgShow" src="/static/images/fileSharingIcon.jpg">
+                <strong style="text-align: center;">File chia sẻ</strong>
+            </div>
+        </a>
+        {% endif %}
+        <a href="groupHomepage?token={{token}}">
+            <div class="projectOption">
+                <img class="imgShow" src="/static/images/groupIcon.jpg">
+                <strong style="text-align: center;">Nhóm</strong>
+            </div>
+        </a>
+        <a href="videoCall?token={{token}}">
+            <div class="projectOption">
+                <img class="imgShow" src="/static/images/videoCallIcon.jpg">
+                <strong style="text-align: center;">Họp</strong>
+            </div>
+        </a>
+    </div>
+</div>
+<style>
+    body {
+        font-size: 20px;
+    }
+    a {
+        text-decoration: none;
+        color: inherit;
+    }
+    .btn{
+        background-color: aqua;
+        margin: 5px 0px 5px 0px;
+        padding: 5px 5px 5px 5px;
+        border: 1px solid;
+    }
+    .btn:hover{
+        background-color:blanchedalmond;
+        color:coral;
+        font-size: 26px;
+        transition: 0.3s;
+    }
+    .projectOption {
+        background-color: cadetblue;
+        display: flex;
+        flex-direction: column;
+        margin: 10px 10px 10px 10px;
+        padding: 10px 10px 10px 10px;
+        border: 2px slategray;
+        border-radius: 10px;
+        width: 200px;
+        height: 200px;
+    }
+    .projectOption:hover {
+        background-color: rgb(200, 255, 105);
+        height: auto;
+        transition: 0.3s;
+    }
+    .imgShow {
+        width: 180px;
+        height: 150px;
+        align-self: center;
+        margin-bottom: 10px;
+    }
+    .taskArray {
+        max-width: 300px;
+        margin-top: 10px;
+        background-color: gray;
+        border: 3px solid;
+        border-radius: 20px;
+        flex-direction: column;
+        padding-bottom: 10px;
+    }
+    .taskArray p {
+        padding-left: 10px;
+        margin-top: 5px;
+        margin-bottom: 5px;
+    }
+    .task {
+        background-color: bisque;
+        border-radius: 5px;
+        margin: 2px 5px 2px 5px;
+        padding-left: 5px;
+        font-size: 15px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .task:hover {
+        white-space: normal;
+        overflow: visible;
+        text-overflow: inherit;
+    }
+</style>
+{% endblock %}
