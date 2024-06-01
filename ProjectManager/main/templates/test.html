@@ -6,108 +6,11 @@
     <title>Test page</title>
 </head>
 <body>
-    <div class="scrollable">
-        <table>
-          <thead>
-            <tr>
-              <th>Column 1</th>
-              <th>Column 2</th>
-              <th>Column 3</th>
-              <th>Column 4</th>
-              <th>Column 5</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>Row 1</td>
-              <td>Row 1</td>
-              <td>Row 1</td>
-              <td>Row 1</td>
-              <td>
-                <table>
-                  <tbody>
-                    <tr>
-                      <td class="small-column" colspan="1"></td>
-                      <td class="small-column" colspan="1"></td>
-                      <td class="small-column" colspan="1"></td>
-                      <td class="small-column" colspan="1"></td>
-                      <!-- Add more <td class="small-column" colspan="1"></td> if needed -->
-                    </tr>
-                  </tbody>
-                </table>
-              </td>
-            </tr>
-            <!-- Add more <tr> if needed -->
-                <tr>
-                    <td>Row 2</td>
-                    <td>Row 2</td>
-                    <td>Row 2</td>
-                    <td>Row 2</td>
-                    <td>
-                      <table>
-                        <tbody>
-                          <tr>
-                            <td class="small-column" colspan="1"></td>
-                            <td class="small-column" colspan="1"></td>
-                            <td class="small-column" colspan="1"></td>
-                            <td class="small-column" colspan="1"></td>
-                            <td class="small-column" colspan="1"></td>
-                            <td class="small-column" colspan="1"></td>
-                            <td class="small-column" colspan="1"></td>
-                            <td class="small-column" colspan="1"></td>
-                            <td class="small-column" colspan="1"></td>
-                            <td class="small-column" colspan="1"></td>
-                            <td class="small-column" colspan="1"></td>
-                            <td class="small-column" colspan="1"></td>
-                            <td class="small-column" colspan="1"></td>
-                            <td class="small-column" colspan="1"></td>
-                            <td class="small-column" colspan="1"></td>
-                            <td class="small-column" colspan="1"></td>
-                            <td class="small-column" colspan="1"></td>
-                            <td class="small-column" colspan="1"></td>
-                            <td class="small-column" colspan="1"></td>
-                            <td class="small-column" colspan="1"></td>
-                            <!-- Add more <td class="small-column" colspan="1"></td> if needed -->
-                          </tr>
-                        </tbody>
-                      </table>
-                    </td>
-                  </tr>
-          </tbody>
-        </table>
-      </div>
-    <style>
-           table {
-    border-collapse: collapse;
-    width: 100%;
-  }
-
-  th, td {
-    border: 1px solid black;
-    padding: 8px;
-    text-align: left;
-  }
-
-  th {
-    position: sticky;
-    top: 0;
-    background-color: white;
-  }
-
-  th:nth-child(5), td:nth-child(5) {
-    position: sticky;
-    left: 0;
-    background-color: white;
-  }
-
-  .scrollable {
-    overflow-x: scroll;
-    width: 100%;
-  }
-
-  .small-column {
-    width: 20px;
-  }
-    </style>
+  {% for user in users %}
+  <p>Tên: {{user.name}}</p>
+  <p>Tuổi: {{user.age}}</p>
+  <p>Giới tính: {% if user.gender == True%}Nam{% else %}Nữ{% endif %}</p>
+  <hr>
+  {% endfor %}
 </body>
 </html>

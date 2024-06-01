@@ -276,10 +276,12 @@
                 remoteStream.addTrack(track, remoteStream);
             })
         })
-
+        var i=1
         peerConnection.addEventListener('icecandidate', e=>{
             if(e.candidate){
                 // gửi đến server
+                console.log(i, e.candidate)
+                i+=1
                 socket.send(
                     JSON.stringify({
                         'type' : 'ice',

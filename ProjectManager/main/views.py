@@ -4,10 +4,9 @@ from .models import *
 from .supposter import *
 import os, datetime
 
-# Create your views here.
-
 def test(request):
-    return render(request, "test.html")
+    send = {"users": [{"name":"Thu", "age":20, "gender":False}, {"name":"Minh", "age":19, "gender":True}]}
+    return render(request, "test.html", send)
 
 def login(request):
     send = {}
@@ -76,11 +75,14 @@ def signup(request):
 
 def logout(request):
     # xóa session
-    token = request.GET["token"]
-    user = User.objects.get(Id_user=request.session[token]["userID"])
-    user.Online = False
-    user.save()
-    del request.session[token]
+    try:
+        token = request.GET["token"]
+        user = User.objects.get(Id_user=request.session[token]["userID"])
+        user.Online = False
+        user.save()
+        del request.session[token]
+    except:
+        pass
     return redirect("login page")
 
 def support(request, position, supportID):
